@@ -1,4 +1,3 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
 import sqlite3
 import hashlib
 from datetime import date, datetime
@@ -228,7 +227,7 @@ def segna_letto(id_messaggio):
     cursor.close()
     conn.close()
     
-    return redirect(url_for("messaggi"))
+    return redirect(url_for("chat_lista"))
 
 @app.route("/invia-messaggio-api", methods=["POST"])
 def invia_messaggio_api():
@@ -247,7 +246,7 @@ def invia_messaggio_api():
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO messaggio (id_mittente, id_destinatario, id_annuncio, contenuto, data_invio, letto)
-        VALUES (?, ?, ?, ?, NOW(), 0)
+        VALUES (?, ?, ?, ?, datetime('now'), 0)
     """, (session["user_id"], id_destinatario, id_annuncio, contenuto))
     conn.commit()
     cursor.close()
@@ -324,7 +323,7 @@ def valuta_utente(id_utente, id_annuncio):
     try:
         cursor.execute("""
             INSERT INTO recensione (id_recensore, id_recensito, id_annuncio, voto, commento, data_recensione)
-            VALUES (?, ?, ?, ?, ?, NOW())
+            VALUES (?, ?, ?, ?, ?, datetime('now'))
         """, (session["user_id"], id_utente, id_annuncio, voto, commento))
         
         cursor.execute("""
@@ -1012,7 +1011,7 @@ def invia_messaggio(id_annuncio):
     cursor.execute("""
     INSERT INTO messaggio (id_mittente, id_destinatario, id_annuncio, contenuto, data_invio, letto)
     VALUES (?, ?, ?, ?, ?, ?)
-    """, (session["user_id"], id_destinatario, id_annuncio, contenuto, datetime.now(), 0))
+    """, (session["user_id"], id_destinatario, id_annuncio, contenuto, datetime.datetime('now'), 0))
     
     conn.commit()
     cursor.close()
@@ -1179,12 +1178,12 @@ def chat_invia_messaggio():
     
     cursor.execute("""
         INSERT INTO messaggio (id_conversazione, id_mittente, id_destinatario, id_annuncio, contenuto, data_invio, letto)
-        VALUES (?, ?, ?, ?, ?, NOW(), 0)
+        VALUES (?, ?, ?, ?, ?, datetime('now'), 0)
     """, (id_conversazione, session["user_id"], id_destinatario, conv['id_annuncio'], messaggio))
     
     cursor.execute("""
         UPDATE conversazione 
-        SET ultimo_messaggio = ?, ultimo_aggiornamento = NOW()
+        SET ultimo_messaggio = ?, ultimo_aggiornamento = datetime('now')
         WHERE id_conversazione = ?
     """, (messaggio[:100], id_conversazione))
     
@@ -1193,7 +1192,7 @@ def chat_invia_messaggio():
     conn.close()
     
     from datetime import datetime
-    now = datetime.now()
+    now = datetime.datetime('now')
     time_str = now.strftime('%H:%M')
     
     socketio.emit('new_chat_message', {
@@ -1240,7 +1239,7 @@ def chat_nuova_conversazione(id_annuncio):
     else:
         cursor.execute("""
             INSERT INTO conversazione (id_annuncio, id_acquirente, id_venditore, ultimo_aggiornamento)
-            VALUES (?, ?, ?, NOW())
+            VALUES (?, ?, ?, datetime('now'))
         """, (id_annuncio, session["user_id"], annuncio['id_utente']))
         id_conversazione = cursor.lastrowid
         conn.commit()
