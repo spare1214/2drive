@@ -113,13 +113,12 @@ def valida_annuncio(data):
 
 @app.route("/")
 def home():
-
     page = request.args.get('page', 1, type=int)
     per_page = 12
     offset = (page - 1) * per_page
 
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
 
     cursor.execute("""
     SELECT COUNT(DISTINCT annuncio.id_annuncio) as total
@@ -143,13 +142,17 @@ def home():
     """, (per_page, offset))
 
     annunci = cursor.fetchall()
-
+    
+    # Converti ogni Row in dizionario e aggiungi le immagini
+    annunci_dict = []
     for annuncio in annunci:
+        annuncio_dict = dict(annuncio)  # Converte Row in dizionario
         cursor.execute("""
         SELECT url FROM immagine WHERE id_annuncio = ? LIMIT 1
         """, (annuncio['id_annuncio'],))
         immagini = cursor.fetchall()
-        annuncio['immagini'] = immagini
+        annuncio_dict['immagini'] = immagini
+        annunci_dict.append(annuncio_dict)
     
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
 
@@ -157,7 +160,7 @@ def home():
     conn.close()
 
     return render_template("index.html", 
-                         annunci=annunci, 
+                         annunci=annunci_dict, 
                          page=page, 
                          total_pages=total_pages,
                          total=total)
@@ -568,7 +571,7 @@ def inserisci():
 @app.route("/annuncio/<id>")
 def annuncio(id):
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
 
     cursor.execute("""
     UPDATE annuncio SET visualizzazioni = visualizzazioni + 1 
@@ -584,22 +587,25 @@ def annuncio(id):
     WHERE annuncio.id_annuncio = ?
     """, (id,))
 
-    annuncio = cursor.fetchone()
+    annuncio_row = cursor.fetchone()
 
-    if annuncio:
+    if annuncio_row:
+        annuncio_dict = dict(annuncio_row)  # Converti in dizionario
         cursor.execute("""
         SELECT url FROM immagine WHERE id_annuncio = ?
         """, (id,))
         immagini = cursor.fetchall()
-        annuncio['immagini'] = immagini
+        annuncio_dict['immagini'] = immagini
+    else:
+        annuncio_dict = None
 
     cursor.close()
     conn.close()
 
-    if not annuncio:
+    if not annuncio_dict:
         return "Annuncio non trovato", 404
 
-    return render_template("annuncio.html", annuncio=annuncio)
+    return render_template("annuncio.html", annuncio=annuncio_dict)
 
 
 @app.route("/cerca")
@@ -684,15 +690,18 @@ def cerca():
     cursor.execute(sql, params)
     annunci = cursor.fetchall()
     
+    annunci_dict = []
     for a in annunci:
+        a_dict = dict(a)
         cursor.execute("SELECT url FROM immagine WHERE id_annuncio = ? LIMIT 1", (a['id_annuncio'],))
         immagini = cursor.fetchall()
-        a['immagini'] = immagini
+        a_dict['immagini'] = immagini
+        annunci_dict.append(a_dict)
     
     cursor.close()
     conn.close()
     
-    return render_template("ricerca.html", annunci=annunci, query=query, sort=sort)
+    return render_template("ricerca.html", annunci=annunci_dict, query=query, sort=sort)
 
 @app.route("/preferiti/aggiungi/<int:id_annuncio>")
 def aggiungi_preferito(id_annuncio):
