@@ -11,8 +11,6 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_socketio import SocketIO, emit, join_room
 import json
 
-
-
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
@@ -24,29 +22,21 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
-
 EMAIL_MITTENTE = "mohamedighir56@gmail.com"
 EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
 def connect_to_db():
-    # 'database.db' è il nome del file che deve stare su GitHub
     conn = sqlite3.connect('database.db')
-    # Questa riga permette di accedere alle colonne per nome (es. riga['nome'])
     conn.row_factory = sqlite3.Row 
     return conn
-
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-
 def invia_mail_verifica(email_destinatario, username, token):
-
     link = f"http://127.0.0.1:5000/verifica/{token}"
 
     corpo = f"""
@@ -69,7 +59,6 @@ Clicca il link per attivare il tuo account
     server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
     server.send_message(msg)
     server.quit()
-
 
 def valida_annuncio(data):
     """Valida i dati dell'annuncio"""
@@ -107,8 +96,6 @@ def valida_annuncio(data):
         return False, "Dati non validi"
     except KeyError as e:
         return False, f"Campo mancante: {e}"
-    
-
 
 @app.route("/")
 def home():
@@ -142,10 +129,9 @@ def home():
 
     annunci = cursor.fetchall()
     
-    # Converti ogni Row in dizionario e aggiungi le immagini
     annunci_dict = []
     for annuncio in annunci:
-        annuncio_dict = dict(annuncio)  # Converte Row in dizionario
+        annuncio_dict = dict(annuncio)
         cursor.execute("""
         SELECT url FROM immagine WHERE id_annuncio = ? LIMIT 1
         """, (annuncio['id_annuncio'],))
@@ -164,16 +150,11 @@ def home():
                          total_pages=total_pages,
                          total=total)
 
-
-
-
 @app.route("/register", methods=["GET","POST"])
 def register():
-
     error = None
 
     if request.method == "POST":
-
         nome = request.form["nome"]
         cognome = request.form["cognome"]
         username = request.form["username"]
@@ -201,11 +182,10 @@ def register():
         """, (username, password, email, nome, cognome, date.today(), False, token))
 
         conn.commit()
-
         cursor.close()
         conn.close()
 
-        invia_mail_verifica(email,username,token)
+        invia_mail_verifica(email, username, token)
 
         error = "Registrazione completata! Controlla la tua email"
         return render_template("login_register.html", panel="login", error=error)
@@ -260,7 +240,7 @@ def api_notifiche():
         return jsonify({"error": "Non autorizzato"})
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = ? AND letto = 0", (session["user_id"],))
     result = cursor.fetchone()
     cursor.close()
@@ -270,12 +250,11 @@ def api_notifiche():
 
 @app.route("/api/chat/non-letti")
 def api_chat_non_letti():
-    """Restituisce il numero di messaggi non letti per l'utente corrente"""
     if "user_id" not in session:
         return jsonify({"non_letti": 0})
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
         SELECT COUNT(*) as count FROM messaggio m
@@ -306,7 +285,7 @@ def valuta_utente(id_utente, id_annuncio):
         return redirect(request.referrer)
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
         SELECT * FROM messaggio 
@@ -348,7 +327,7 @@ def valuta_utente(id_utente, id_annuncio):
 @app.route("/recensioni/<int:id_utente>")
 def recensioni_utente(id_utente):
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
         SELECT u.*, 
@@ -375,7 +354,6 @@ def recensioni_utente(id_utente):
 
 @app.route("/verifica/<token>")
 def verifica(token):
-
     conn = connect_to_db()
     cursor = conn.cursor()
 
@@ -400,15 +378,11 @@ def verifica(token):
     conn.close()
     return message
 
-
-
 @app.route("/login", methods=["GET","POST"])
 def login():
-
     error = None
 
     if request.method == "POST":
-
         username = request.form["username"]
         password = hash_password(request.form["password"])
 
@@ -436,33 +410,26 @@ def login():
             return render_template("login_register.html", panel="login", error=error)
 
         if stored_password == password:
-
             session["user_id"] = id_utente
             session["username"] = username
-
             return redirect(url_for("home"))
-
         else:
             error = "Password errata"
             return render_template("login_register.html", panel="login", error=error)
 
     return render_template("login_register.html", panel="login")
 
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("home"))
 
-
 @app.route("/inserisci", methods=["GET","POST"])
 def inserisci():
-
     if "user_id" not in session:
         return redirect(url_for("login"))
 
     if request.method == "POST":
-        
         valido, messaggio = valida_annuncio(request.form)
         if not valido:
             flash(messaggio, "error")  
@@ -502,7 +469,6 @@ def inserisci():
         for file in files:
             if file and file.filename and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                import time
                 unique_filename = f"{int(time.time())}_{filename}"
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
                 file.save(filepath)
@@ -554,7 +520,7 @@ def inserisci():
         return redirect(url_for("home"))
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("SELECT * FROM marca ORDER BY nome_marca")
     marche = cursor.fetchall()
@@ -589,7 +555,7 @@ def annuncio(id):
     annuncio_row = cursor.fetchone()
 
     if annuncio_row:
-        annuncio_dict = dict(annuncio_row)  # Converti in dizionario
+        annuncio_dict = dict(annuncio_row)
         cursor.execute("""
         SELECT url FROM immagine WHERE id_annuncio = ?
         """, (id,))
@@ -605,7 +571,6 @@ def annuncio(id):
         return "Annuncio non trovato", 404
 
     return render_template("annuncio.html", annuncio=annuncio_dict)
-
 
 @app.route("/cerca")
 def cerca():
@@ -623,7 +588,7 @@ def cerca():
     colore = request.args.get('colore', '')
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     sql = """
     SELECT annuncio.*, veicolo.*, marca.nome_marca
@@ -709,7 +674,7 @@ def aggiungi_preferito(id_annuncio):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
     SELECT id_utente, titolo FROM annuncio WHERE id_annuncio = ? AND stato = 'attivo'
@@ -773,7 +738,7 @@ def miei_preferiti():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
     SELECT annuncio.*, veicolo.modello, veicolo.anno, marca.nome_marca, 
@@ -785,7 +750,7 @@ def miei_preferiti():
     JOIN utente ON annuncio.id_utente = utente.id_utente
     WHERE preferiti.id_utente = ? 
       AND annuncio.stato = 'attivo'
-      AND annuncio.id_utente != ?  -- Non mostrare i propri annunci
+      AND annuncio.id_utente != ?
     ORDER BY preferiti.data_aggiunta DESC
     """, (session["user_id"], session["user_id"]))
     
@@ -796,14 +761,13 @@ def miei_preferiti():
     
     return render_template("miei_preferiti.html", preferiti=preferiti)
 
-
 @app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
     SELECT annuncio.*, veicolo.modello, veicolo.anno, marca.nome_marca
@@ -856,7 +820,7 @@ def miei_annunci():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
     SELECT annuncio.*, veicolo.modello, veicolo.anno, marca.nome_marca
@@ -920,7 +884,7 @@ def modifica_annuncio(id_annuncio):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
     SELECT annuncio.*, veicolo.*, marca.nome_marca
@@ -979,7 +943,6 @@ def modifica_annuncio(id_annuncio):
                          marche=marche,
                          categorie=categorie)
 
-
 @app.route("/invia-messaggio/<int:id_annuncio>", methods=["POST"])
 def invia_messaggio(id_annuncio):
     if "user_id" not in session:
@@ -990,7 +953,7 @@ def invia_messaggio(id_annuncio):
         return "Il messaggio non può essere vuoto", 400
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("SELECT id_utente FROM annuncio WHERE id_annuncio = ?", (id_annuncio,))
     annuncio = cursor.fetchone()
@@ -1007,11 +970,10 @@ def invia_messaggio(id_annuncio):
         conn.close()
         return "Non puoi inviare messaggi a te stesso", 400
     
-    from datetime import datetime
     cursor.execute("""
     INSERT INTO messaggio (id_mittente, id_destinatario, id_annuncio, contenuto, data_invio, letto)
     VALUES (?, ?, ?, ?, ?, ?)
-    """, (session["user_id"], id_destinatario, id_annuncio, contenuto, datetime.datetime('now'), 0))
+    """, (session["user_id"], id_destinatario, id_annuncio, contenuto, datetime.now(), 0))
     
     conn.commit()
     cursor.close()
@@ -1019,15 +981,13 @@ def invia_messaggio(id_annuncio):
     
     return redirect(url_for("annuncio", id=id_annuncio))
 
-
 @app.route("/chat")
 def chat_lista():
-    """Mostra tutte le conversazioni dell'utente"""
     if "user_id" not in session:
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
         SELECT DISTINCT 
@@ -1062,12 +1022,11 @@ def chat_lista():
 
 @app.route("/chat/<int:id_conversazione>")
 def chat_dettaglio(id_conversazione):
-    """Mostra i messaggi di una conversazione"""
     if "user_id" not in session:
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
         SELECT * FROM conversazione 
@@ -1161,7 +1120,7 @@ def chat_invia_messaggio():
         return jsonify({"success": False, "error": "Messaggio vuoto"})
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("""
         SELECT * FROM conversazione 
@@ -1191,8 +1150,7 @@ def chat_invia_messaggio():
     cursor.close()
     conn.close()
     
-    from datetime import datetime
-    now = datetime.datetime('now')
+    now = datetime.now()
     time_str = now.strftime('%H:%M')
     
     socketio.emit('new_chat_message', {
@@ -1207,12 +1165,11 @@ def chat_invia_messaggio():
 
 @app.route("/api/chat/nuova/<int:id_annuncio>")
 def chat_nuova_conversazione(id_annuncio):
-    """Crea una nuova conversazione o restituisce quella esistente"""
     if "user_id" not in session:
         return jsonify({"success": False, "error": "Non autenticato"})
     
     conn = connect_to_db()
-    cursor = conn.cursor( )
+    cursor = conn.cursor()
     
     cursor.execute("SELECT id_utente, titolo FROM annuncio WHERE id_annuncio = ?", (id_annuncio,))
     annuncio = cursor.fetchone()
@@ -1249,15 +1206,12 @@ def chat_nuova_conversazione(id_annuncio):
     
     return jsonify({"success": True, "id_conversazione": id_conversazione})
 
-
-
 @socketio.on('join_chat')
 def handle_join_chat(data):
     room = f"chat_{data['conversazione_id']}"
     join_room(room)
     print(f"Utente {data['user_id']} è entrato nella stanza {room}")
     emit('user_joined', {'user_id': data['user_id']}, room=room)
-
 
 @socketio.on('typing')
 def handle_typing(data):
@@ -1266,7 +1220,7 @@ def handle_typing(data):
         'user_id': data['user_id'],
         'username': session.get('username', 'Utente'),
         'is_typing': data['is_typing']
-    }, room=room, include_self=False) 
+    }, room=room, include_self=False)
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
