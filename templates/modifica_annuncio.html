@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Modifica annuncio</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+    .edit-container {
+        max-width: 800px;
+        margin: 50px auto;
+        background: white;
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .form-group input, 
+    .form-group textarea, 
+    .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+    }
+    
+    button {
+        background: #0B0058;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        width: 100%;
+    }
+    
+    button:hover {
+        background: #1C09B3;
+    }
+    .badge-notifica {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+}
+</style>
+</head>
+
+<body class="homepage">
+
+<header class="navbar">
+    <div class="logo">🚗 Portale Veicoli</div>
+    <div class="menu">
+        <a href="/">Home</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/logout">Logout</a>
+    </div>
+</header>
+
+<div class="edit-container">
+    <h2>Modifica annuncio</h2>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label>Titolo</label>
+            <input type="text" name="titolo" value="{{ annuncio.titolo }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Descrizione</label>
+            <textarea name="descrizione" rows="5">{{ annuncio.descrizione }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Prezzo (€)</label>
+            <input type="number" name="prezzo" step="0.01" value="{{ annuncio.prezzo }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Modello</label>
+            <input type="text" name="modello" value="{{ annuncio.modello }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Anno</label>
+            <input type="number" name="anno" value="{{ annuncio.anno }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Chilometraggio</label>
+            <input type="number" name="chilometraggio" value="{{ annuncio.chilometraggio }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Colore</label>
+            <input type="text" name="colore" value="{{ annuncio.colore }}" required>
+        </div>
+        
+        <button type="submit">Salva modifiche</button>
+    </form>
+</div>
+<script>
+    function checkChatNotifiche() {
+        fetch('/api/chat/non-letti')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('chatNotifica');
+                if (badge && data) {
+                    if (data.non_letti > 0) {
+                        badge.textContent = data.non_letti;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => console.error('Errore:', error));
+    }
+    
+    checkChatNotifiche();
+    setInterval(checkChatNotifiche, 30000);
+</script>
+</body>
+</html>

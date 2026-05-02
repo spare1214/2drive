@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Chat - Portale Veicoli</title>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8f9fc; height: 100vh; display: flex; flex-direction: column; }
+    
+    .chat-header {
+        background: linear-gradient(135deg, #0B0058, #1C09B3);
+        color: white;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-shrink: 0;
+    }
+
+    .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    background: #f0f2f5;
+}
+
+.chat-messages {
+    display: flex;
+    flex-direction: column;
+}
+
+.typing-indicator {
+    margin-top: auto;
+}
+    .chat-header a { color: white; text-decoration: none; font-size: 1.2rem; background: rgba(255,255,255,0.2); width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.3s; }
+    .chat-header a:hover { background: rgba(255,255,255,0.4); }
+    .chat-header-info { flex: 1; }
+    .chat-header-info strong { font-size: 1.1rem; display: block; }
+    .chat-annuncio { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
+    .online-status { font-size: 0.7rem; background: #28a745; padding: 0.2rem 0.5rem; border-radius: 20px; display: inline-block; }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        background: #f0f2f5;
+    }
+    
+    .message {
+        max-width: 75%;
+        padding: 0.8rem 1rem;
+        border-radius: 18px;
+        word-wrap: break-word;
+        animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .message.sent { background: linear-gradient(135deg, #0B0058, #1C09B3); color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
+    .message.received { background: white; color: #333; align-self: flex-start; border-bottom-left-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .message-time { font-size: 0.6rem; opacity: 0.7; margin-top: 0.3rem; text-align: right; }
+    
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.5rem 1rem;
+        background: white;
+        border-radius: 20px;
+        width: fit-content;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        animation: fadeIn 0.3s ease;
+    }
+    .typing-dots { display: flex; gap: 4px; }
+    .typing-dots span {
+        width: 8px;
+        height: 8px;
+        background: #999;
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out;
+    }
+    .typing-dots span:nth-child(1) { animation-delay: 0s; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+        30% { transform: translateY(-8px); opacity: 1; }
+    }
+    .typing-text { font-size: 0.75rem; color: #666; }
+    
+    .message-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+    .avatar-placeholder-small {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+    .avatar-placeholder-small i {
+        font-size: 12px;
+        color: white;
+    }
+    .message-content {
+        display: inline-block;
+        vertical-align: middle;
+    }
+    
+    .chat-input {
+        padding: 1rem;
+        background: white;
+        border-top: 1px solid #eee;
+        display: flex;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+    .chat-input input { flex: 1; padding: 0.8rem 1rem; border: 2px solid #e0e0e0; border-radius: 25px; outline: none; font-size: 0.9rem; }
+    .chat-input input:focus { border-color: #0B0058; }
+    .chat-input button { padding: 0.8rem 1.5rem; background: linear-gradient(135deg, #ff7a00, #ff9e3e); border: none; border-radius: 25px; color: white; cursor: pointer; font-weight: 600; transition: 0.3s; }
+    .chat-input button:hover { transform: translateY(-2px); }
+    
+    @media (max-width: 768px) {
+        .message { max-width: 85%; }
+        .chat-input button span { display: none; }
+    }
+
+    .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    background: #f0f2f5;
+}
+
+#typingIndicator {
+    margin-top: auto;
+}
+
+#messagesList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+</style>
+</head>
+<body>
+
+<div class="chat-header">
+    <a href="/chat"><i class="fas fa-arrow-left"></i></a>
+    <div class="chat-header-info">
+        <strong><i class="fas fa-user-circle"></i> {{ altro_utente.username if altro_utente and altro_utente.username else 'Utente' }}</strong>
+        <div class="chat-annuncio">
+            <i class="fas fa-car"></i> {{ annuncio.titolo if annuncio and annuncio.titolo else 'Annuncio' }}
+            {% if annuncio and annuncio.prezzo %} - {{ "%.0f"|format(annuncio.prezzo) }} €{% endif %}
+        </div>
+    </div>
+    <div class="online-status" id="status"><i class="fas fa-circle"></i> Connesso</div>
+</div>
+
+<div class="chat-messages" id="messages">
+    <div id="messagesList">
+        {% if messaggi and messaggi|length > 0 %}
+            {% for msg in messaggi %}
+            <div class="message {% if msg.id_mittente == session.user_id %}sent{% else %}received{% endif %}">
+                <div>
+                    {% if msg.foto_profilo %}
+                        <img src="{{ msg.foto_profilo }}" class="message-avatar" alt="avatar">
+                    {% else %}
+                        <div class="avatar-placeholder-small">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    {% endif %}
+                    <span class="message-content">{{ msg.contenuto }}</span>
+                </div>
+                <div class="message-time">
+                    {% if msg.data_invio %}
+                        {% if msg.data_invio is string %}
+                            {{ msg.data_invio[:16] if msg.data_invio|length > 16 else msg.data_invio }}
+                        {% else %}
+                            {{ msg.data_invio.strftime('%H:%M') }}
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-chat" style="text-align: center; color: #999; padding: 2rem;">
+                <i class="fas fa-comment-dots" style="font-size: 3rem;"></i>
+                <p>Nessun messaggio. Inizia tu la conversazione!</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div id="typingIndicator" class="typing-indicator" style="display: none;">
+        <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <span class="typing-text" id="typingText">sta scrivendo...</span>
+    </div>
+</div>
+
+<div class="chat-input">
+    <input type="text" id="messageInput" placeholder="Scrivi un messaggio..." autofocus>
+    <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i> <span>Invia</span></button>
+</div>
+
+<script>
+    let socket = null;
+    let conversazioneId = 0;
+    let userId = 0;
+    let typingTimeout = null;
+    let isTyping = false;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        conversazioneId = parseInt('{{ conversazione.id_conversazione|default(0) }}');
+        userId = parseInt('{{ session.user_id|default(0) }}');
+        
+        console.log('Chat inizializzata - ID:', conversazioneId, 'User:', userId);
+        
+        if (conversazioneId > 0 && userId > 0) {
+            socket = io();
+            
+            socket.emit('join_chat', { 
+                conversazione_id: conversazioneId, 
+                user_id: userId 
+            });
+            
+            socket.on('new_chat_message', function(data) {
+    console.log('Messaggio ricevuto:', data);
+    if (data.conversazione_id === conversazioneId) {
+        const messagesList = document.getElementById('messagesList');
+        const typingDiv = document.getElementById('typingIndicator');
+        
+        if (typingDiv) typingDiv.style.display = 'none';
+        
+        const emptyDiv = messagesList.querySelector('.empty-chat');
+        if (emptyDiv) {
+            messagesList.innerHTML = '';
+        }
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ' + (data.user_id === userId ? 'sent' : 'received');
+        
+        let avatarHtml = '';
+        if (data.foto_profilo) {
+            avatarHtml = `<img src="${data.foto_profilo}" class="message-avatar" alt="avatar">`;
+        } else {
+            avatarHtml = `<div class="avatar-placeholder-small"><i class="fas fa-user"></i></div>`;
+        }
+        
+        messageDiv.innerHTML = `
+            <div>
+                ${avatarHtml}
+                <span class="message-content">${escapeHtml(data.message)}</span>
+            </div>
+            <div class="message-time">${data.time}</div>
+        `;
+        
+        messagesList.appendChild(messageDiv);
+        
+        const messagesContainer = document.getElementById('messages');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+});
+            socket.on('user_typing', function(data) {
+                const typingDiv = document.getElementById('typingIndicator');
+                const typingText = document.getElementById('typingText');
+                
+                if (data.is_typing && data.user_id !== userId) {
+                    typingText.textContent = data.username + ' sta scrivendo...';
+                    typingDiv.style.display = 'flex';
+                    
+                    const messagesDiv = document.getElementById('messages');
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                } else {
+                    typingDiv.style.display = 'none';
+                }
+            });
+            socket.on('connect', function() {
+                console.log('Socket.IO connesso');
+                const statusEl = document.getElementById('status');
+                if (statusEl) {
+                    statusEl.innerHTML = '<i class="fas fa-circle"></i> Connesso';
+                    statusEl.style.background = '#28a745';
+                }
+            });
+            
+            socket.on('disconnect', function() {
+                console.log('Socket.IO disconnesso');
+                const statusEl = document.getElementById('status');
+                if (statusEl) {
+                    statusEl.innerHTML = '<i class="fas fa-circle"></i> Disconnesso';
+                    statusEl.style.background = '#dc3545';
+                }
+            });
+        }
+        
+        const messagesDiv = document.getElementById('messages');
+        if (messagesDiv) {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    });
+    
+    const messageInput = document.getElementById('messageInput');
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            if (socket && conversazioneId > 0) {
+                if (!isTyping && this.value.trim().length > 0) {
+                    isTyping = true;
+                    socket.emit('typing', {
+                        conversazione_id: conversazioneId,
+                        user_id: userId,
+                        is_typing: true
+                    });
+                }
+                
+                if (typingTimeout) clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(function() {
+                    if (isTyping) {
+                        isTyping = false;
+                        socket.emit('typing', {
+                            conversazione_id: conversazioneId,
+                            user_id: userId,
+                            is_typing: false
+                        });
+                    }
+                }, 1000);
+            }
+        });
+    }
+    
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        if (!message) return;
+        
+        fetch('/api/chat/invia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                id_conversazione: conversazioneId, 
+                messaggio: message 
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                input.value = '';
+                input.focus();
+                if (isTyping) {
+                    isTyping = false;
+                    socket.emit('typing', {
+                        conversazione_id: conversazioneId,
+                        user_id: userId,
+                        is_typing: false
+                    });
+                }
+            } else {
+                console.error('Errore:', data.error);
+            }
+        })
+        .catch(error => console.error('Errore fetch:', error));
+    }
+    
+    if (messageInput) {
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>

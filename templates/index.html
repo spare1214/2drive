@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Portale Veicoli</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #f8f9fc;
+    }
+
+    .navbar {
+        background: linear-gradient(135deg, #0B0058 0%, #1C09B3 100%);
+        padding: 1rem 5%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .menu {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .menu a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+    }
+
+    .menu a:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-2px);
+    }
+
+    .user {
+        background: rgba(255,255,255,0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-annuncio {
+        background: #ff7a00;
+        padding: 0.5rem 1.5rem !important;
+        border-radius: 25px !important;
+        font-weight: 700 !important;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-annuncio:hover {
+        background: #ff9e3e !important;
+    }
+
+    .search-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 4rem 2rem;
+        text-align: center;
+        color: white;
+    }
+
+    .search-box h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        font-weight: 800;
+    }
+
+    .search-box p {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+    }
+
+    .search-container {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .search-container input {
+        flex: 1;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: 50px;
+        font-size: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .search-container input:focus {
+        outline: none;
+    }
+
+    .search-container button {
+        padding: 1rem 2rem;
+        background: #ff7a00;
+        border: none;
+        border-radius: 50px;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .search-container button:hover {
+        background: #ff9e3e;
+        transform: translateY(-2px);
+    }
+
+    .annunci {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 4rem 2rem;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .section-header h2 {
+        font-size: 2rem;
+        color: #1a1a2e;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .grid-annunci {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+    }
+
+    .card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .card-badge {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        background: #ff7a00;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .img-placeholder {
+        height: 220px;
+        background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .img-placeholder img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+
+    .card:hover .img-placeholder img {
+        transform: scale(1.05);
+    }
+
+    .img-placeholder i {
+        font-size: 4rem;
+        color: rgba(0,0,0,0.3);
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-subtitle {
+        color: #666;
+        font-size: 0.8rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .card-details {
+        display: flex;
+        gap: 0.8rem;
+        margin: 1rem 0;
+        padding: 0.8rem 0;
+        border-top: 1px solid #eee;
+        border-bottom: 1px solid #eee;
+    }
+
+    .detail {
+        flex: 1;
+        text-align: center;
+    }
+
+    .detail i {
+        color: #ff7a00;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    .detail span {
+        font-size: 0.65rem;
+        color: #666;
+        display: block;
+    }
+
+    .detail strong {
+        font-size: 0.8rem;
+        color: #333;
+        display: block;
+        margin-top: 4px;
+    }
+
+    .price {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #ff7a00;
+        margin: 0.8rem 0;
+        display: flex;
+        align-items: baseline;
+        gap: 5px;
+    }
+
+    .price small {
+        font-size: 0.7rem;
+        font-weight: 400;
+        color: #999;
+    }
+
+    .card-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .btn-card {
+        flex: 1;
+        text-align: center;
+        padding: 0.7rem;
+        background: linear-gradient(135deg, #0B0058, #1C09B3);
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .btn-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(11,0,88,0.3);
+    }
+
+    .btn-preferito {
+        padding: 0.7rem 1rem;
+        background: #ff7a00;
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-preferito:hover {
+        background: #ff9e3e;
+        transform: scale(1.05);
+    }
+
+    .seller-info {
+        margin-top: 1rem;
+        padding-top: 0.8rem;
+        border-top: 1px solid #eee;
+        font-size: 0.7rem;
+        color: #999;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 3rem;
+        flex-wrap: wrap;
+    }
+
+    .pagination a, .pagination span {
+        padding: 0.6rem 1rem;
+        background: white;
+        color: #0B0058;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s;
+        font-weight: 600;
+    }
+
+    .pagination a:hover {
+        background: #0B0058;
+        color: white;
+    }
+
+    .pagination .active {
+        background: linear-gradient(135deg, #0B0058, #1C09B3);
+        color: white;
+    }
+
+    .page-info {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #666;
+        font-size: 0.8rem;
+    }
+
+    .flash-message {
+        max-width: 1400px;
+        margin: 1rem auto;
+        padding: 1rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .flash-success {
+        background: #d4edda;
+        color: #155724;
+        border-left: 4px solid #28a745;
+    }
+
+    .flash-error {
+        background: #f8d7da;
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+
+    .flash-warning {
+        background: #fff3cd;
+        color: #856404;
+        border-left: 4px solid #ffc107;
+    }
+
+    .no-annunci {
+        text-align: center;
+        padding: 4rem;
+        background: white;
+        border-radius: 20px;
+        grid-column: 1 / -1;
+    }
+
+    .badge-notifica {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+}
+
+    @media (max-width: 1024px) {
+        .grid-annunci {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .navbar {
+            flex-direction: column;
+            text-align: center;
+        }
+        .menu {
+            justify-content: center;
+        }
+        .search-box h1 {
+            font-size: 1.8rem;
+        }
+        .search-container {
+            flex-direction: column;
+            padding: 0 1rem;
+        }
+        .annunci {
+            padding: 2rem 1rem;
+        }
+        .grid-annunci {
+            grid-template-columns: 1fr;
+        }
+        .img-placeholder {
+            height: 200px;
+        }
+    }
+    .badge-notifica {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="logo">
+        <i class="fas fa-car"></i>
+        <span>Portale Veicoli</span>
+    </div>
+    <div class="menu">
+        {% if session.username %}
+        <span class="user"><i class="fas fa-user-circle"></i> Ciao {{ session.username }}</span>
+        
+        <a href="/dashboard">
+    <i class="fas fa-tachometer-alt"></i> Dashboard
+</a>
+
+        <a href="/miei-preferiti"><i class="fas fa-heart"></i> Preferiti</a>
+        <a href="/chat" style="position: relative;">
+            <i class="fas fa-comments"></i> Chat
+            <span class="badge-notifica" id="chatNotifica" style="display: none;">0</span>
+        </a>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        {% else %}
+        <a href="/login"><i class="fas fa-sign-in-alt"></i> Accedi</a>
+        <a href="/register"><i class="fas fa-user-plus"></i> Registrati</a>
+        {% endif %}
+        <a class="btn-annuncio" href="/inserisci"><i class="fas fa-plus-circle"></i> Inserisci annuncio</a>
+    </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+                <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %}"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<section class="search-box">
+    <h1><i class="fas fa-search"></i> Trova il tuo veicolo perfetto</h1>
+    <p>Oltre 1000 veicoli tra auto, moto e molto altro</p>
+    <form action="/cerca" method="GET" class="search-container">
+        <input type="text" name="q" placeholder="Cosa cerchi? (es. Fiat Panda, Volkswagen Golf...)">
+        <button type="submit"><i class="fas fa-search"></i> Cerca</button>
+    </form>
+</section>
+
+<section class="filters-section">
+    <div class="filters-container">
+        <div class="filters-header">
+            <h3><i class="fas fa-filter"></i> Filtri avanzati</h3>
+            <button id="resetFilters" class="btn-reset"><i class="fas fa-undo"></i> Reset</button>
+        </div>
+        <form id="filterForm" class="filters-grid">
+            <div class="filter-group">
+                <label><i class="fas fa-tag"></i> Marca</label>
+                <select name="marca" id="filterMarca">
+                    <option value="">Tutte le marche</option>
+                    {% for marca in marche %}
+                    <option value="{{ marca.id_marca }}">{{ marca.nome_marca }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-euro-sign"></i> Prezzo (€)</label>
+                <div class="price-range">
+                    <input type="number" name="prezzo_min" placeholder="Min" id="prezzoMin">
+                    <span>-</span>
+                    <input type="number" name="prezzo_max" placeholder="Max" id="prezzoMax">
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-calendar-alt"></i> Anno</label>
+                <div class="year-range">
+                    <input type="number" name="anno_min" placeholder="Da" id="annoMin" min="1900" max="2026">
+                    <span>-</span>
+                    <input type="number" name="anno_max" placeholder="A" id="annoMax" min="1900" max="2026">
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-tachometer-alt"></i> Chilometraggio</label>
+                <input type="number" name="chilometraggio_max" placeholder="Max km" id="chilometraggioMax">
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-gas-pump"></i> Carburante</label>
+                <select name="carburante" id="filterCarburante">
+                    <option value="">Tutti</option>
+                    <option value="benzina">Benzina</option>
+                    <option value="diesel">Diesel</option>
+                    <option value="GPL">GPL</option>
+                    <option value="metano">Metano</option>
+                    <option value="elettrico">Elettrico</option>
+                    <option value="ibrido">Ibrido</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-cog"></i> Cambio</label>
+                <select name="cambio" id="filterCambio">
+                    <option value="">Tutti</option>
+                    <option value="manuale">Manuale</option>
+                    <option value="automatico">Automatico</option>
+                    <option value="semiautomatico">Semiautomatico</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-palette"></i> Colore</label>
+                <select name="colore" id="filterColore">
+                    <option value="">Tutti</option>
+                    <option value="Bianco">Bianco</option>
+                    <option value="Nero">Nero</option>
+                    <option value="Grigio">Grigio</option>
+                    <option value="Argento">Argento</option>
+                    <option value="Blu">Blu</option>
+                    <option value="Rosso">Rosso</option>
+                </select>
+            </div>
+            
+            <div class="filter-group filter-actions">
+                <button type="submit" class="btn-apply-filters"><i class="fas fa-search"></i> Applica filtri</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<style>
+    .filters-section {
+        background: white;
+        border-radius: 20px;
+        margin: 1rem 2rem;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .filters-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .filters-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .filters-header h3 {
+        color: #0B0058;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-reset {
+        background: #f0f0f0;
+        border: none;
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .btn-reset:hover {
+        background: #e0e0e0;
+        transform: translateY(-2px);
+    }
+    
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .filter-group label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 0.5rem;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+        width: 100%;
+        padding: 0.6rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+    }
+    
+    .filter-group select:focus,
+    .filter-group input:focus {
+        border-color: #0B0058;
+        outline: none;
+    }
+    
+    .price-range, .year-range {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .price-range input, .year-range input {
+        width: calc(50% - 0.5rem);
+    }
+    
+    .btn-apply-filters {
+        background: linear-gradient(135deg, #0B0058, #1C09B3);
+        color: white;
+        border: none;
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s;
+    }
+    
+    .btn-apply-filters:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(11,0,88,0.3);
+    }
+    
+    @media (max-width: 768px) {
+        .filters-section {
+            margin: 1rem;
+            padding: 1rem;
+        }
+        .filters-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    document.getElementById('filterForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const filters = {
+            marca: document.getElementById('filterMarca').value,
+            prezzo_min: document.getElementById('prezzoMin').value,
+            prezzo_max: document.getElementById('prezzoMax').value,
+            anno_min: document.getElementById('annoMin').value,
+            anno_max: document.getElementById('annoMax').value,
+            chilometraggio_max: document.getElementById('chilometraggioMax').value,
+            carburante: document.getElementById('filterCarburante').value,
+            cambio: document.getElementById('filterCambio').value,
+            colore: document.getElementById('filterColore').value
+        };
+        localStorage.setItem('savedFilters', JSON.stringify(filters));
+        
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value) params.append(key, value);
+        });
+        window.location.href = '/cerca?' + params.toString();
+    });
+    
+    document.getElementById('resetFilters').addEventListener('click', function() {
+        localStorage.removeItem('savedFilters');
+        window.location.href = '/';
+    });
+    
+    const savedFilters = localStorage.getItem('savedFilters');
+    if (savedFilters) {
+        const filters = JSON.parse(savedFilters);
+        Object.entries(filters).forEach(([key, value]) => {
+            const el = document.getElementById('filter' + key.charAt(0).toUpperCase() + key.slice(1));
+            if (el && value) el.value = value;
+        });
+    }
+</script>
+
+<section class="annunci">
+    <div class="section-header">
+        <h2><i class="fas fa-star"></i> Ultimi veicoli pubblicati</h2>
+    </div>
+    
+    <div class="grid-annunci">
+        {% if annunci %}
+            {% for annuncio in annunci %}
+            <div class="card">
+                <div class="card-badge">
+                    <i class="fas fa-certificate"></i> NUOVO
+                </div>
+                <div class="img-placeholder">
+                    {% if annuncio.immagini and annuncio.immagini|length > 0 %}
+                        <img src="{{ annuncio.immagini[0].url }}" alt="{{ annuncio.titolo }}">
+                    {% else %}
+                        <i class="fas fa-car-side"></i>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ annuncio.titolo }}</h3>
+                    <div class="card-subtitle">
+                        <i class="fas fa-tag"></i> {{ annuncio.nome_marca }} {{ annuncio.modello }}
+                        <i class="fas fa-calendar-alt" style="margin-left: auto;"></i> {{ annuncio.anno }}
+                    </div>
+                    
+                    <div class="card-details">
+                        <div class="detail">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Chilometri</span>
+                            <strong>{{ "{:,}".format(annuncio.chilometraggio).replace(',', '.') if annuncio.chilometraggio else '0' }} km</strong>
+                        </div>
+                        <div class="detail">
+                            <i class="fas fa-gas-pump"></i>
+                            <span>Carburante</span>
+                            <strong>{{ annuncio.carburante|capitalize if annuncio.carburante else 'N/D' }}</strong>
+                        </div>
+                        <div class="detail">
+                            <i class="fas fa-cog"></i>
+                            <span>Cambio</span>
+                            <strong>{{ annuncio.cambio|capitalize if annuncio.cambio else 'N/D' }}</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="price">
+                        {{ "%.2f"|format(annuncio.prezzo) }} €
+                        <small>IVA inclusa</small>
+                    </div>
+                    
+                    <div class="card-actions">
+                        <a class="btn-card" href="/annuncio/{{ annuncio.id_annuncio }}">
+                            <i class="fas fa-eye"></i> Vedi annuncio
+                        </a>
+                        {% if session.user_id and session.user_id != annuncio.id_utente %}
+                        <a href="/preferiti/aggiungi/{{ annuncio.id_annuncio }}" class="btn-preferito" title="Aggiungi ai preferiti">
+                            <i class="fas fa-heart"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="seller-info">
+                        <i class="fas fa-store"></i> Venditore: {{ annuncio.nome_utente if annuncio.nome_utente else 'Privato' }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-annunci">
+                <i class="fas fa-car-side"></i>
+                <p>📭 Nessun annuncio pubblicato.</p>
+                <a href="/inserisci" class="btn-card" style="display: inline-block; width: auto;">Pubblica il tuo primo annuncio</a>
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+            <a href="?page={{ page - 1 }}"><i class="fas fa-chevron-left"></i> Precedente</a>
+        {% else %}
+            <span class="disabled"><i class="fas fa-chevron-left"></i> Precedente</span>
+        {% endif %}
+        
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+                <span class="active">{{ p }}</span>
+            {% else %}
+                <a href="?page={{ p }}">{{ p }}</a>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page < total_pages %}
+            <a href="?page={{ page + 1 }}">Successiva <i class="fas fa-chevron-right"></i></a>
+        {% else %}
+            <span class="disabled">Successiva <i class="fas fa-chevron-right"></i></span>
+        {% endif %}
+    </div>
+    <div class="page-info">
+        Pagina {{ page }} di {{ total_pages }} ({{ annunci|length }} annunci su {{ total }} totali)
+    </div>
+    {% endif %}
+</section>
+
+<script>
+    function checkNotifiche() {
+        fetch('/api/notifiche')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('notificaDashboard');
+                if (badge && data) {
+                    if (data.messaggi_non_letti > 0) {
+                        badge.textContent = data.messaggi_non_letti;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => console.error('Errore:', error));
+    }
+    
+    checkNotifiche();
+    setInterval(checkNotifiche, 30000);
+    
+    if ('Notification' in window) {
+        Notification.requestPermission();
+    }
+</script>
+<script>
+    function checkChatNotifiche() {
+        fetch('/api/chat/non-letti')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('chatNotifica');
+                if (badge && data) {
+                    if (data.non_letti > 0) {
+                        badge.textContent = data.non_letti;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => console.error('Errore:', error));
+    }
+    
+    checkChatNotifiche();
+    setInterval(checkChatNotifiche, 30000);
+</script>
+</body>
+<script>
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+        Notification.requestPermission();
+        
+        setInterval(checkNotifications, 30000);
+        
+        function checkNotifications() {
+            fetch('/api/notifiche')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.messaggi_non_letti > 0 && Notification.permission === 'granted') {
+                        new Notification('Nuovi messaggi!', {
+                            body: `Hai ${data.messaggi_non_letti} messaggi non letti`,
+                            icon: '/static/logo.png'
+                        });
+                    }
+                });
+        }
+    }
+</script>
+</html>

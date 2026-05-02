@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Risultati ricerca - Portale Veicoli</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #f8f9fc;
+    }
+
+    .navbar {
+        background: linear-gradient(135deg, #0B0058 0%, #1C09B3 100%);
+        padding: 1rem 5%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .menu {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .menu a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+    }
+
+    .menu a:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-2px);
+    }
+
+    .btn-annuncio {
+        background: #ff7a00;
+        padding: 0.5rem 1.5rem !important;
+        border-radius: 25px !important;
+        font-weight: 700 !important;
+    }
+
+    .annunci {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+    }
+
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .results-header h2 {
+        color: #0B0058;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sort-select {
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        font-size: 0.9rem;
+        background: white;
+        cursor: pointer;
+    }
+
+    .grid-annunci {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 2rem;
+    }
+
+    .card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        transition: all 0.3s;
+    }
+
+    .card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .img-placeholder {
+        height: 200px;
+        background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .img-placeholder img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .img-placeholder i {
+        font-size: 4rem;
+        color: rgba(0,0,0,0.3);
+    }
+
+    .card-body {
+        padding: 1.2rem;
+    }
+
+    .card-body h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    .price {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #ff7a00;
+        margin: 0.8rem 0;
+    }
+
+    .btn-card {
+        display: inline-block;
+        padding: 0.6rem 1rem;
+        background: linear-gradient(135deg, #0B0058, #1C09B3);
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+    }
+
+    .btn-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 4rem;
+        background: white;
+        border-radius: 20px;
+    }
+
+    .no-results i {
+        font-size: 4rem;
+        color: #ccc;
+        margin-bottom: 1rem;
+    }
+
+    .search-again {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .search-again input {
+        padding: 0.8rem 1rem;
+        width: 300px;
+        border-radius: 50px;
+        border: 1px solid #ddd;
+    }
+
+    .search-again button {
+        padding: 0.8rem 1.5rem;
+        background: #ff7a00;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .navbar {
+            flex-direction: column;
+            text-align: center;
+        }
+        .menu {
+            justify-content: center;
+        }
+        .annunci {
+            padding: 1rem;
+        }
+        .results-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        .grid-annunci {
+            grid-template-columns: 1fr;
+        }
+    }
+    .badge-notifica {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="logo">
+        <i class="fas fa-car"></i>
+        <span>Portale Veicoli</span>
+    </div>
+    <div class="menu">
+        {% if session.username %}
+        <span class="user"><i class="fas fa-user-circle"></i> Ciao {{ session.username }}</span>
+        <a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/miei-preferiti"><i class="fas fa-heart"></i> Preferiti</a>
+<a href="/chat" style="position: relative;">
+    <i class="fas fa-comments"></i> Chat
+    <span class="badge-notifica" id="chatNotifica" style="display: none;">0</span>
+</a>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        {% else %}
+        <a href="/login"><i class="fas fa-sign-in-alt"></i> Accedi</a>
+        <a href="/register"><i class="fas fa-user-plus"></i> Registrati</a>
+        {% endif %}
+        <a class="btn-annuncio" href="/inserisci"><i class="fas fa-plus-circle"></i> Inserisci annuncio</a>
+    </div>
+</header>
+
+<div class="annunci">
+    <div class="results-header">
+        <h2><i class="fas fa-search"></i> Risultati ricerca: "{{ query }}"</h2>
+        
+        <select class="sort-select" onchange="window.location.href=this.value">
+            <option value="?q={{ query }}&sort=recent">📅 Più recenti</option>
+            <option value="?q={{ query }}&sort=price_asc">💰 Prezzo crescente</option>
+            <option value="?q={{ query }}&sort=price_desc">💰 Prezzo decrescente</option>
+        </select>
+    </div>
+    
+    {% if annunci %}
+        <div class="grid-annunci">
+            {% for annuncio in annunci %}
+            <div class="card">
+                <div class="img-placeholder">
+                    {% if annuncio.immagini and annuncio.immagini|length > 0 %}
+                        <img src="{{ annuncio.immagini[0].url }}" alt="{{ annuncio.titolo }}">
+                    {% else %}
+                        <i class="fas fa-car-side"></i>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h3>{{ annuncio.titolo }}</h3>
+                    <p><i class="fas fa-tag"></i> {{ annuncio.nome_marca }} {{ annuncio.modello }} - {{ annuncio.anno }}</p>
+                    <div class="price">{{ "%.2f"|format(annuncio.prezzo) }} €</div>
+                    <a class="btn-card" href="/annuncio/{{ annuncio.id_annuncio }}">
+                        <i class="fas fa-eye"></i> Vedi annuncio
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-results">
+            <i class="fas fa-frown"></i>
+            <p>😔 Nessun annuncio trovato per "{{ query }}"</p>
+            <div class="search-again">
+                <form action="/cerca" method="GET">
+                    <input type="text" name="q" placeholder="Prova un'altra ricerca...">
+                    <button type="submit"><i class="fas fa-search"></i> Cerca</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+</div>
+<script>
+    function checkChatNotifiche() {
+        fetch('/api/chat/non-letti')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('chatNotifica');
+                if (badge && data) {
+                    if (data.non_letti > 0) {
+                        badge.textContent = data.non_letti;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => console.error('Errore:', error));
+    }
+    
+    checkChatNotifiche();
+    setInterval(checkChatNotifiche, 30000);
+</script>
+</body>
+</html>

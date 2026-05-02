@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Inserisci annuncio - Portale Veicoli</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #f8f9fc;
+    }
+
+    .navbar {
+        background: linear-gradient(135deg, #0B0058 0%, #1C09B3 100%);
+        padding: 1rem 5%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .logo i {
+        font-size: 2rem;
+    }
+
+    .menu {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .menu a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+    }
+
+    .menu a:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-2px);
+    }
+
+    .btn-home {
+        background: rgba(255,255,255,0.15);
+        border-radius: 50px !important;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-home:hover {
+        background: rgba(255,255,255,0.3) !important;
+    }
+
+    .insert-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    .insert-container h2 {
+        color: #0B0058;
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section h3 {
+        color: #0B0058;
+        font-size: 1.2rem;
+        margin-bottom: 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-left: 0.5rem;
+        border-left: 3px solid #ff7a00;
+    }
+
+    .form-section h3 i {
+        color: #ff7a00;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.2rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #333;
+        font-size: 0.85rem;
+    }
+
+    .form-group label i {
+        color: #ff7a00;
+        margin-right: 6px;
+        width: 18px;
+    }
+
+    .required:after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        transition: all 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #0B0058;
+        box-shadow: 0 0 0 3px rgba(11,0,88,0.1);
+    }
+
+    .telefono-toggle {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-top: 0.8rem;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .checkbox-group input {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    small {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.7rem;
+        color: #888;
+    }
+
+    .preview-images {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .preview-images img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+
+    .preview-images img:hover {
+        transform: scale(1.05);
+    }
+
+    .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 0.8rem 1rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #dc3545;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #0B0058, #1C09B3);
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 700;
+        width: 100%;
+        margin-top: 1rem;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(11,0,88,0.3);
+    }
+
+    input[type="file"] {
+        padding: 0.6rem;
+        background: #f8f9fa;
+        border: 2px dashed #ccc;
+        cursor: pointer;
+    }
+
+    input[type="file"]:hover {
+        border-color: #ff7a00;
+        background: #fff5e6;
+    }
+
+    @media (max-width: 768px) {
+        .navbar {
+            flex-direction: column;
+            text-align: center;
+        }
+        .menu {
+            justify-content: center;
+        }
+        .insert-container {
+            margin: 1rem;
+            padding: 1.5rem;
+        }
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+        .insert-container h2 {
+            font-size: 1.4rem;
+        }
+        .form-section h3 {
+            font-size: 1rem;
+        }
+    }
+    .badge-notifica {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="logo">
+        <i class="fas fa-car"></i>
+        <span>Portale Veicoli</span>
+    </div>
+    <div class="menu">
+        <a href="/" class="btn-home">
+            <i class="fas fa-home"></i> Home
+        </a>
+        {% if session.username %}
+        <a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/miei-annunci"><i class="fas fa-list"></i> I miei annunci</a>
+ì        <a href="/chat" style="position: relative;">
+            <i class="fas fa-comments"></i> Chat
+            <span class="badge-notifica" id="chatNotifica" style="display: none;">0</span>
+        </a>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="insert-container">
+    <h2>
+        <i class="fas fa-plus-circle" style="color: #ff7a00;"></i>
+        Inserisci nuovo annuncio
+    </h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="form-section">
+            <h3><i class="fas fa-info-circle"></i> Informazioni annuncio</h3>
+            
+            <div class="form-group">
+                <label class="required"><i class="fas fa-heading"></i> Titolo annuncio</label>
+                <input type="text" name="titolo" placeholder="es. Fiat Panda in ottime condizioni" required>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-align-left"></i> Descrizione</label>
+                <textarea name="descrizione" placeholder="Descrivi il veicolo, le sue condizioni, eventuali difetti, ecc." rows="5"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="required"><i class="fas fa-euro-sign"></i> Prezzo (€)</label>
+                <input type="number" name="prezzo_annuncio" placeholder="es. 8500" step="0.01" required>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3><i class="fas fa-car"></i> Dati veicolo</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required"><i class="fas fa-tags"></i> Categoria</label>
+                    <select name="categoria" required>
+                        <option value="">Seleziona categoria</option>
+                        {% for c in categorie %}
+                        <option value="{{c.id_categoria}}">{{c.tipo_categoria}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="required"><i class="fas fa-trademark"></i> Marca</label>
+                    <select name="marca" required>
+                        <option value="">Seleziona marca</option>
+                        {% for m in marche %}
+                        <option value="{{m.id_marca}}">{{m.nome_marca}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="required"><i class="fas fa-car-side"></i> Modello</label>
+                <input type="text" name="modello" placeholder="es. Panda, Golf, 500" required>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required"><i class="fas fa-calendar-alt"></i> Anno</label>
+                    <input type="number" name="anno" placeholder="es. 2020" min="1900" max="2026" required>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> Mese (opzionale)</label>
+                    <select name="mese_immatricolazione">
+                        <option value="">Seleziona mese</option>
+                        <option value="01">Gennaio</option>
+                        <option value="02">Febbraio</option>
+                        <option value="03">Marzo</option>
+                        <option value="04">Aprile</option>
+                        <option value="05">Maggio</option>
+                        <option value="06">Giugno</option>
+                        <option value="07">Luglio</option>
+                        <option value="08">Agosto</option>
+                        <option value="09">Settembre</option>
+                        <option value="10">Ottobre</option>
+                        <option value="11">Novembre</option>
+                        <option value="12">Dicembre</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-id-card"></i> Targa (opzionale)</label>
+                <input type="text" name="targa" placeholder="es. AB123CD" maxlength="20">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required"><i class="fas fa-gas-pump"></i> Carburante</label>
+                    <select name="carburante" required>
+                        <option value="">Seleziona carburante</option>
+                        <option value="benzina">Benzina</option>
+                        <option value="diesel">Diesel</option>
+                        <option value="GPL">GPL</option>
+                        <option value="metano">Metano</option>
+                        <option value="elettrico">Elettrico</option>
+                        <option value="ibrido">Ibrido</option>
+                        <option value="altro">Altro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="required"><i class="fas fa-cog"></i> Cambio</label>
+                    <select name="cambio" required>
+                        <option value="">Seleziona tipo cambio</option>
+                        <option value="manuale">Manuale</option>
+                        <option value="automatico">Automatico</option>
+                        <option value="semiautomatico">Semiautomatico</option>
+                        <option value="altro">Altro</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required"><i class="fas fa-tachometer-alt"></i> Chilometraggio (km)</label>
+                    <input type="number" name="chilometraggio" placeholder="es. 30000" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="required"><i class="fas fa-palette"></i> Colore</label>
+                    <select name="colore" required>
+                        <option value="">Seleziona colore</option>
+                        <option value="Bianco">Bianco</option>
+                        <option value="Nero">Nero</option>
+                        <option value="Grigio">Grigio</option>
+                        <option value="Argento">Argento</option>
+                        <option value="Blu">Blu</option>
+                        <option value="Rosso">Rosso</option>
+                        <option value="Verde">Verde</option>
+                        <option value="Giallo">Giallo</option>
+                        <option value="Arancione">Arancione</option>
+                        <option value="Marrone">Marrone</option>
+                        <option value="Viola">Viola</option>
+                        <option value="Rosa">Rosa</option>
+                        <option value="Altro">Altro</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-users"></i> Numero posti</label>
+                    <input type="number" name="numero_posti" placeholder="es. 5" min="1" max="9">
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-map-marker-alt"></i> Luogo</label>
+                    <input type="text" name="luogo" placeholder="es. Milano, Roma, Napoli">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3><i class="fas fa-phone-alt"></i> Contatti e foto</h3>
+            
+            <div class="form-group">
+                <label class="required"><i class="fas fa-phone"></i> Numero di telefono</label>
+                <input type="tel" name="telefono" placeholder="es. 3331234567" required>
+                
+                <div class="telefono-toggle">
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="mostra_telefono" id="mostra_telefono" checked>
+                        <label for="mostra_telefono">Mostra il numero di telefono nell'annuncio</label>
+                    </div>
+                    <small><i class="fas fa-info-circle"></i> Se deselezioni, gli utenti dovranno contattarti tramite messaggistica interna</small>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-images"></i> Foto del veicolo</label>
+                <input type="file" name="immagini" id="immagini" multiple accept="image/*" onchange="previewImages()">
+                <small><i class="fas fa-info-circle"></i> Puoi selezionare più foto (max 16MB totali). Formati: PNG, JPG, JPEG, GIF, WEBP</small>
+                <div id="preview" class="preview-images"></div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-submit">
+            <i class="fas fa-paper-plane"></i> Pubblica annuncio
+        </button>
+    </form>
+</div>
+
+<script>
+function previewImages() {
+    const preview = document.getElementById('preview');
+    const files = document.getElementById('immagini').files;
+    
+    preview.innerHTML = '';
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            preview.appendChild(img);
+        }
+        
+        reader.readAsDataURL(file);
+    }
+}
+</script>
+<script>
+    function checkChatNotifiche() {
+        fetch('/api/chat/non-letti')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('chatNotifica');
+                if (badge && data) {
+                    if (data.non_letti > 0) {
+                        badge.textContent = data.non_letti;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => console.error('Errore:', error));
+    }
+    
+    checkChatNotifiche();
+    setInterval(checkChatNotifiche, 30000);
+</script>
+</body>
+</html>

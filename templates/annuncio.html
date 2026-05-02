@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>{{annuncio.titolo}} - Portale Veicoli</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background: #f8f9fc;
+    }
+
+    .navbar {
+        background: linear-gradient(135deg, #0B0058 0%, #1C09B3 100%);
+        padding: 1rem 5%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .logo {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .menu a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+    }
+
+    .menu a:hover {
+        background: rgba(255,255,255,0.1);
+    }
+
+    .annuncio-page {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        display: flex;
+        gap: 3rem;
+        flex-wrap: wrap;
+    }
+
+    .annuncio-images {
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .main-image {
+        width: 100%;
+        height: 350px;
+        object-fit: cover;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .image-gallery {
+        display: flex;
+        gap: 0.8rem;
+        margin-top: 1rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+
+    .image-gallery img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+
+    .image-gallery img:hover {
+        transform: scale(1.05);
+        border-color: #ff7a00;
+    }
+
+    .annuncio-info {
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .annuncio-info h1 {
+        font-size: 1.8rem;
+        color: #0B0058;
+        margin-bottom: 0.5rem;
+    }
+
+    .annuncio-info h2 {
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 1rem;
+    }
+
+    .price {
+        font-size: 2rem;
+        color: #ff7a00;
+        font-weight: 800;
+        margin: 1rem 0;
+        padding: 0.8rem 1rem;
+        background: linear-gradient(135deg, #fff5e6, #fff);
+        border-radius: 12px;
+        display: inline-block;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 15px;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.5rem;
+        background: white;
+        border-radius: 10px;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #0B0058;
+        min-width: 100px;
+        font-size: 0.85rem;
+    }
+
+    .info-value {
+        color: #333;
+        font-size: 0.85rem;
+    }
+
+    .telefono-box {
+        background: linear-gradient(135deg, #e8f0fe, #d9e4f5);
+        padding: 1rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        text-align: center;
+    }
+
+    .telefono-numero {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #0B0058;
+    }
+
+    .descrizione {
+        margin: 1rem 0;
+        line-height: 1.6;
+        color: #555;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+    }
+
+    .btn-preferiti {
+        display: inline-block;
+        margin: 1rem 0;
+        padding: 0.8rem 1.5rem;
+        background: linear-gradient(135deg, #ff7a00, #ff9e3e);
+        color: white;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .btn-preferiti:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255,122,0,0.3);
+    }
+
+    @media (max-width: 768px) {
+        .navbar {
+            flex-direction: column;
+            text-align: center;
+        }
+        .annuncio-page {
+            margin: 1rem;
+            padding: 1rem;
+        }
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        .main-image {
+            height: 250px;
+        }
+    }
+
+    .badge-notifica {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<header class="navbar">
+    <div class="logo">
+        <i class="fas fa-car"></i>
+        <span>Portale Veicoli</span>
+    </div>
+    <div class="menu">
+        <a href="/"><i class="fas fa-home"></i> Home</a>
+        {% if session.user_id %}
+        <a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/chat" style="position: relative;">
+            <i class="fas fa-comments"></i> Chat
+            <span class="badge-notifica" id="chatNotifica" style="display: none;">0</span></a>
+        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        {% else %}
+        <a href="/login"><i class="fas fa-sign-in-alt"></i> Accedi</a>
+        {% endif %}
+    </div>
+</header>
+
+<div class="annuncio-page">
+
+<div class="annuncio-images">
+    {% if annuncio.immagini and annuncio.immagini|length > 0 %}
+        <img id="mainImage" class="main-image" src="{{ annuncio.immagini[0].url }}" alt="Immagine principale">
+        {% if annuncio.immagini|length > 1 %}
+        <div class="image-gallery">
+            {% for img in annuncio.immagini %}
+                <img src="{{ img.url }}" 
+                     onclick="document.getElementById('mainImage').src='{{ img.url }}'"
+                     alt="Foto veicolo">
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="main-image" style="display: flex; align-items: center; justify-content: center; background: #ddd;">
+            <i class="fas fa-car-side" style="font-size: 4rem; color: #999;"></i>
+        </div>
+    {% endif %}
+</div>
+
+<div class="annuncio-info">
+    <h1>{{annuncio.titolo}}</h1>
+    <h2><i class="fas fa-tag"></i> {{annuncio.nome_marca}} {{annuncio.modello}}</h2>
+
+    <div class="price">{{ "%.2f"|format(annuncio.prezzo) }} € <small>IVA inclusa</small></div>
+
+    {% if session.user_id and session.user_id != annuncio.id_utente %}
+        <a href="/preferiti/aggiungi/{{ annuncio.id_annuncio }}" class="btn-preferiti">
+            <i class="fas fa-heart"></i> Aggiungi ai preferiti
+        </a>
+    {% endif %}
+
+    {% if session.user_id and session.user_id != annuncio.id_utente %}
+<div class="action-buttons">
+    <button onclick="avviaChat()" class="btn-messaggio">
+        <i class="fas fa-comment-dots"></i> Chat in tempo reale
+    </button>
+</div>
+{% endif %}
+
+<script>
+function avviaChat() {
+    fetch('/api/chat/nuova/{{ annuncio.id_annuncio }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/chat/' + data.id_conversazione;
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            alert('Errore durante l\'apertura della chat');
+        });
+}
+</script>
+
+    <div class="info-grid">
+        <div class="info-item">
+            <span class="info-label"><i class="fas fa-calendar"></i> Immatricolazione:</span>
+            <span class="info-value">{{ annuncio.anno }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label"><i class="fas fa-tachometer-alt"></i> Chilometraggio:</span>
+            <span class="info-value">{{ "{:,}".format(annuncio.chilometraggio).replace(',', '.') }} km</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label"><i class="fas fa-gas-pump"></i> Carburante:</span>
+            <span class="info-value">{{ annuncio.carburante|capitalize if annuncio.carburante else 'Non specificato' }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label"><i class="fas fa-cog"></i> Cambio:</span>
+            <span class="info-value">{{ annuncio.cambio|capitalize if annuncio.cambio else 'Non specificato' }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label"><i class="fas fa-palette"></i> Colore:</span>
+            <span class="info-value">{{ annuncio.colore }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label"><i class="fas fa-users"></i> Posti:</span>
+            <span class="info-value">{{ annuncio.numero_posti if annuncio.numero_posti else 'Non specificato' }}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label"><i class="fas fa-map-marker-alt"></i> Luogo:</span>
+            <span class="info-value">{{ annuncio.luogo if annuncio.luogo else 'Non specificato' }}</span>
+        </div>
+    </div>
+
+    {% if annuncio.telefono_visibile and annuncio.telefono %}
+    <div class="telefono-box">
+        <i class="fas fa-phone"></i>
+        <div class="telefono-numero">{{ annuncio.telefono }}</div>
+        <small>Chiama o scrivi per maggiori informazioni</small>
+    </div>
+    {% endif %}
+
+    <h3><i class="fas fa-align-left"></i> Descrizione</h3>
+    <p class="descrizione">
+        {{ annuncio.descrizione if annuncio.descrizione else 'Nessuna descrizione fornita' }}
+    </p>
+
+    <p><small><i class="fas fa-clock"></i> Pubblicato il: {{ annuncio.data_pubblicazione }}</small></p>
+</div>
+
+</div>
+<script>
+    function checkChatNotifiche() {
+        fetch('/api/chat/non-letti')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('chatNotifica');
+                if (badge && data) {
+                    if (data.non_letti > 0) {
+                        badge.textContent = data.non_letti;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => console.error('Errore:', error));
+    }
+    
+    checkChatNotifiche();
+    setInterval(checkChatNotifiche, 30000);
+</script>
+</body>
+</html>
