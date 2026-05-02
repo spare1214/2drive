@@ -36,7 +36,7 @@ def allowed_file(filename):
 
 def connect_to_db():
     # 'database.db' è il nome del file che deve stare su GitHub
-    conn = sqlite3.connect('Dump20260422 (2).db')
+    conn = sqlite3.connect('database.db')
     # Questa riga permette di accedere alle colonne per nome (es. riga['nome'])
     conn.row_factory = sqlite3.Row 
     return conn
