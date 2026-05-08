@@ -32,24 +32,13 @@ EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 db_pool = None
 
 def connect_to_db():
-    global db_pool
-    # Su Render (PostgreSQL)
+    # Su Render - usa SQLite con disco persistente
     if os.environ.get('RENDER'):
-        if db_pool is None:
-            db_pool = SimpleConnectionPool(
-                1, 10,
-                host=os.environ.get('DB_HOST'),
-                database=os.environ.get('DB_NAME'),
-                user=os.environ.get('DB_USER'),
-                password=os.environ.get('DB_PASSWORD'),
-                port=int(os.environ.get('DB_PORT', 5432))
-            )
-        conn = db_pool.getconn()
-        # Per avere dizionari invece di tuple
-        conn.cursor_factory = RealDictCursor
-        return conn
+        # Crea la cartella /data se non esiste
+        os.makedirs('/data', exist_ok=True)
+        return sqlite3.connect('/data/database.db', check_same_thread=False)
     else:
-        # Locale - SQLite
+        # Locale
         return sqlite3.connect('database.db', check_same_thread=False)
 
 def allowed_file(filename):
