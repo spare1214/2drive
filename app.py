@@ -32,14 +32,8 @@ EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 db_pool = None
 
 def connect_to_db():
-    # Su Render - usa SQLite con disco persistente
-    if os.environ.get('RENDER'):
-        # Crea la cartella /data se non esiste
-        os.makedirs('/data', exist_ok=True)
-        return sqlite3.connect('/data/database.db', check_same_thread=False)
-    else:
-        # Locale
-        return sqlite3.connect('database.db', check_same_thread=False)
+    # Usa SQLite nella cartella del progetto (funziona su Render free)
+    return sqlite3.connect('database.db', check_same_thread=False)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
