@@ -29,9 +29,12 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def connect_to_db():
-    conn = sqlite3.connect('database.db')
-    conn.row_factory = sqlite3.Row 
-    return conn
+    if os.environ.get('RENDER'):
+        # Su Render - usa il disco persistente
+        return sqlite3.connect('/data/database.db', check_same_thread=False)
+    else:
+        # In locale (Windows/Mac) - usa SQLite
+        return sqlite3.connect('database.db', check_same_thread=False)
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
