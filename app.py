@@ -32,7 +32,6 @@ EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 db_pool = None
 
 def connect_to_db():
-    # Usa SQLite nella cartella del progetto (funziona su Render free)
     return sqlite3.connect('database.db', check_same_thread=False)
 
 def allowed_file(filename):
