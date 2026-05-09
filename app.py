@@ -29,8 +29,13 @@ EMAIL_MITTENTE = "mohamedighir56@gmail.com"
 EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 
 def connect_to_db():
-    # Su Render o in produzione
+    """Connessione al database"""
+    
+    # Su Render (usa PostgreSQL)
     if os.environ.get('SUPABASE_HOST'):
+        # Importa psycopg2 solo qui, quando serve
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
         return psycopg2.connect(
             host=os.environ.get('SUPABASE_HOST'),
             database=os.environ.get('SUPABASE_DB', 'postgres'),
@@ -40,8 +45,7 @@ def connect_to_db():
             cursor_factory=RealDictCursor
         )
     else:
-        # Locale - usa SQLite (per sviluppo)
-        import sqlite3
+        # Locale - SQLite
         return sqlite3.connect('database.db', check_same_thread=False)
 
 def allowed_file(filename):
