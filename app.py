@@ -10,6 +10,9 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_socketio import SocketIO, emit, join_room
 import json
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -26,7 +29,20 @@ EMAIL_MITTENTE = "mohamedighir56@gmail.com"
 EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 
 def connect_to_db():
-    return sqlite3.connect('database.db', check_same_thread=False)
+    # Su Render o in produzione
+    if os.environ.get('SUPABASE_HOST'):
+        return psycopg2.connect(
+            host=os.environ.get('SUPABASE_HOST'),
+            database=os.environ.get('SUPABASE_DB', 'postgres'),
+            user=os.environ.get('SUPABASE_USER', 'postgres'),
+            password=os.environ.get('SUPABASE_PASSWORD'),
+            port=int(os.environ.get('SUPABASE_PORT', 5432)),
+            cursor_factory=RealDictCursor
+        )
+    else:
+        # Locale - usa SQLite (per sviluppo)
+        import sqlite3
+        return sqlite3.connect('database.db', check_same_thread=False)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
