@@ -4,4 +4,3 @@ flask-socketio
 python-socketio
 eventlet
 gunicorn
-psycopg2-binary
