@@ -60,7 +60,7 @@ def invia_mail_verifica(email_destinatario, username, token):
     # Versione semplificata - verifica automatica
     conn = connect_to_db()
     cursor = get_cursor(conn)
-    cursor.execute("UPDATE utente SET verificato=1 WHERE username=%s", (username,))
+    cursor.execute("UPDATE utente SET verificato=TRUE WHERE username=%s", (username,))
     conn.commit()
     cursor.close()
     conn.close()
@@ -246,7 +246,7 @@ def logout():
 def verifica(token):
     conn = connect_to_db()
     cursor = get_cursor(conn)
-    cursor.execute("UPDATE utente SET verificato=1, token_verifica=NULL WHERE token_verifica=%s", (token,))
+    cursor.execute("UPDATE utente SET verificato=TRUE, token_verifica=NULL WHERE token_verifica=%s", (token,))
     conn.commit()
     cursor.close()
     conn.close()
