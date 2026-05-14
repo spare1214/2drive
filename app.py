@@ -463,7 +463,7 @@ def chat_lista():
                 WHEN c.id_acquirente = %s THEN c.id_venditore
                 ELSE c.id_acquirente
             END as altro_utente_id,
-            (SELECT COUNT(*) FROM messaggio WHERE id_conversazione = c.id_conversazione AND id_destinatario = %s AND letto = 0) as non_letti
+            (SELECT COUNT(*) FROM messaggio WHERE id_conversazione = c.id_conversazione AND id_destinatario = %s AND letto = FALSE) as non_letti
         FROM conversazione c
         JOIN annuncio a ON c.id_annuncio = a.id_annuncio
         JOIN utente vend ON c.id_venditore = vend.id_utente
@@ -524,8 +524,8 @@ def chat_dettaglio(id_conversazione):
         altro_utente = dict(altro_utente)
     
     cursor.execute("""
-        UPDATE messaggio SET letto = 1 
-        WHERE id_conversazione = %s AND id_destinatario = %s AND letto = 0
+        UPDATE messaggio SET letto = TRUE 
+        WHERE id_conversazione = %s AND id_destinatario = %s AND letto = FALSE
     """, (id_conversazione, session["user_id"]))
     conn.commit()
     
@@ -659,7 +659,7 @@ def api_chat_non_letti():
     cursor.execute("""
         SELECT COUNT(*) as count FROM messaggio m
         JOIN conversazione c ON m.id_conversazione = c.id_conversazione
-        WHERE m.id_destinatario = %s AND m.letto = 0
+        WHERE m.id_destinatario = %s AND m.letto = FALSE
     """, (session["user_id"],))
     
     result = cursor.fetchone()
@@ -773,7 +773,7 @@ def dashboard():
     """, (session["user_id"],))
     miei_preferiti = cursor.fetchall()
     
-    cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = %s AND letto = 0", (session["user_id"],))
+    cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = %s AND letto = FALSE", (session["user_id"],))
     result = cursor.fetchone()
     messaggi_non_letti = result[0] if result else 0
     
@@ -911,7 +911,7 @@ def api_notifiche():
     
     conn = connect_to_db()
     cursor = get_cursor(conn)
-    cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = %s AND letto = 0", (session["user_id"],))
+    cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = %s AND letto = FALSE", (session["user_id"],))
     result = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -924,7 +924,7 @@ def segna_letto(id_messaggio):
     
     conn = connect_to_db()
     cursor = get_cursor(conn)
-    cursor.execute("UPDATE messaggio SET letto = 1 WHERE id_messaggio = %s AND id_destinatario = %s", (id_messaggio, session["user_id"]))
+    cursor.execute("UPDATE messaggio SET letto = TRUE WHERE id_messaggio = %s AND id_destinatario = %s", (id_messaggio, session["user_id"]))
     conn.commit()
     cursor.close()
     conn.close()
