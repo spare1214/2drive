@@ -1,4 +1,5 @@
 import sqlite3
+import mysql.connector
 import hashlib
 from datetime import date, datetime
 import secrets
@@ -10,9 +11,6 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_socketio import SocketIO, emit, join_room
 import json
-import mysql.connector
-
-
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -28,13 +26,29 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 EMAIL_MITTENTE = "mohamedighir56@gmail.com"
 EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 
+# VARIABILE PER CAPIRE SE SIAMO SU RENDER
+IS_RENDER = os.environ.get('RENDER', False)
+
 def connect_to_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="root", 
-        database="portale_vendita_veicoli"
-    )
+    """Connessione al database - MySQL in locale, SQLite su Render"""
+    if IS_RENDER:
+        # Su Render - usa SQLite (i dati si salvano in database.db)
+        return sqlite3.connect('database.db', check_same_thread=False)
+    else:
+        # In locale - usa MySQL
+        return mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="root",  # La tua password MySQL
+            database="portale_vendita_veicoli"
+        )
+
+def dict_factory(cursor, row):
+    """Converte una riga in dizionario per SQLite"""
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -107,7 +121,14 @@ def home():
     offset = (page - 1) * per_page
 
     conn = connect_to_db()
-    conn.row_factory = sqlite3.Row
+    
+    # Per SQLite, usa dict_factory
+    if IS_RENDER:
+        conn.row_factory = dict_factory
+    else:
+        # Per MySQL, usa dictionary cursor
+        cursor = conn.cursor(dictionary=True)
+    
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -133,13 +154,12 @@ def home():
         LIMIT %s OFFSET %s
     """, (per_page, offset))
 
-    annunci = []
-    for row in cursor.fetchall():
-        annuncio = dict(row)
+    annunci = cursor.fetchall()
+    
+    for annuncio in annunci:
         cursor.execute("SELECT url FROM immagine WHERE id_annuncio = %s LIMIT 1", (annuncio['id_annuncio'],))
-        immagini = [dict(img) for img in cursor.fetchall()]
+        immagini = cursor.fetchall()
         annuncio['immagini'] = immagini
-        annunci.append(annuncio)
     
     total_pages = (total + per_page - 1) // per_page if total > 0 else 1
 
