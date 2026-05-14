@@ -184,7 +184,7 @@ def register():
             INSERT INTO utente
             (username,password,email,nome,cognome,data_registrazione,verificato,token_verifica)
             VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (username, password, email, nome, cognome, date.today(), 1, token))
+        """, (username, password, email, nome, cognome, date.today(), True, token))
 
         conn.commit()
         cursor.close()
@@ -634,7 +634,7 @@ def chat_nuova_conversazione(id_annuncio):
     conv = cursor.fetchone()
     
     if conv:
-        id_conversazione = conv[0] if conv else None
+        id_conversazione = conv['id_conversazione'] if conv else None
     else:
         cursor.execute("""
             INSERT INTO conversazione (id_annuncio, id_acquirente, id_venditore, ultimo_aggiornamento)
@@ -666,7 +666,7 @@ def api_chat_non_letti():
     cursor.close()
     conn.close()
     
-    return jsonify({"non_letti": result[0] if result else 0})
+    return jsonify({"non_letti": result['count'] if result else 0})
 
 # ==================== PREFERITI ====================
 
@@ -688,7 +688,7 @@ def aggiungi_preferito(id_annuncio):
         conn.close()
         return redirect(url_for("home"))
     
-    if annuncio[0] == session["user_id"]:
+    if annuncio['id_utente'] == session["user_id"]:
         flash("❌ Non puoi aggiungere ai preferiti i tuoi annunci!", "warning")
         cursor.close()
         conn.close()
@@ -775,7 +775,7 @@ def dashboard():
     
     cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = %s AND letto = FALSE", (session["user_id"],))
     result = cursor.fetchone()
-    messaggi_non_letti = result[0] if result else 0
+    messaggi_non_letti = result['count'] if result else 0
     
     cursor.execute("""
         SELECT m.*, u.username as mittente_username, a.titolo as titolo_annuncio
@@ -915,7 +915,7 @@ def api_notifiche():
     result = cursor.fetchone()
     cursor.close()
     conn.close()
-    return jsonify({"messaggi_non_letti": result[0] if result else 0})
+    return jsonify({"messaggi_non_letti": result['count'] if result else 0})
 
 @app.route("/segna-letto/<int:id_messaggio>")
 def segna_letto(id_messaggio):
