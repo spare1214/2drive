@@ -10,6 +10,7 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_socketio import SocketIO, emit, join_room
 import json
+import mysql.connector
 
 
 
@@ -28,8 +29,12 @@ EMAIL_MITTENTE = "mohamedighir56@gmail.com"
 EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 
 def connect_to_db():
-    import sqlite3
-    return sqlite3.connect('database.db', check_same_thread=False)
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="root", 
+        database="portale_vendita_veicoli"
+    )
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -125,13 +130,13 @@ def home():
         JOIN utente ON annuncio.id_utente = utente.id_utente
         WHERE annuncio.stato = 'attivo'
         ORDER BY annuncio.data_pubblicazione DESC
-        LIMIT ? OFFSET ?
+        LIMIT %s OFFSET %s
     """, (per_page, offset))
 
     annunci = []
     for row in cursor.fetchall():
         annuncio = dict(row)
-        cursor.execute("SELECT url FROM immagine WHERE id_annuncio = ? LIMIT 1", (annuncio['id_annuncio'],))
+        cursor.execute("SELECT url FROM immagine WHERE id_annuncio = %s LIMIT 1", (annuncio['id_annuncio'],))
         immagini = [dict(img) for img in cursor.fetchall()]
         annuncio['immagini'] = immagini
         annunci.append(annuncio)
@@ -163,7 +168,7 @@ def register():
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT * FROM utente WHERE username=? OR email=?",
+            "SELECT * FROM utente WHERE username=%s OR email=%s",
             (username, email)
         )
 
@@ -176,7 +181,7 @@ def register():
         cursor.execute("""
             INSERT INTO utente
             (username,password,email,nome,cognome,data_registrazione,verificato,token_verifica)
-            VALUES(?,?,?,?,?,?,?,?)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
         """, (username, password, email, nome, cognome, date.today(), False, token))
 
         conn.commit()
@@ -203,7 +208,7 @@ def login():
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT id_utente, password, verificato FROM utente WHERE username=?",
+            "SELECT id_utente, password, verificato FROM utente WHERE username=%s",
             (username,)
         )
 
@@ -241,7 +246,7 @@ def verifica(token):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id_utente FROM utente WHERE token_verifica=?",
+        "SELECT id_utente FROM utente WHERE token_verifica=%s",
         (token,)
     )
 
@@ -249,7 +254,7 @@ def verifica(token):
 
     if result:
         cursor.execute(
-            "UPDATE utente SET verificato=1, token_verifica=NULL WHERE id_utente=?",
+            "UPDATE utente SET verificato=1, token_verifica=NULL WHERE id_utente=%s",
             (result[0],)
         )
         conn.commit()
@@ -316,7 +321,7 @@ def inserisci():
                 INSERT INTO veicolo
                 (modello, anno, data_immatricolazione, targa, carburante, cambio, 
                  chilometraggio, colore, numero_posti, luogo, id_marca, id_categoria, prezzo, telefono)
-                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (modello, anno, data_immatricolazione, targa, carburante, cambio,
                   chilometraggio, colore, numero_posti, luogo, id_marca, id_categoria, 
                   prezzo_annuncio, telefono))
@@ -326,14 +331,14 @@ def inserisci():
             cursor.execute("""
                 INSERT INTO annuncio
                 (titolo, descrizione, data_pubblicazione, stato, id_utente, id_veicolo, prezzo, telefono_visibile)
-                VALUES(?,?,?,?,?,?,?,?)
+                VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
             """, (titolo, descrizione, date.today(), "attivo", session["user_id"], 
                   id_veicolo, prezzo_annuncio, mostra_telefono))
             
             id_annuncio = cursor.lastrowid
             
             for url in immagini_urls:
-                cursor.execute("INSERT INTO immagine (url, id_annuncio) VALUES(?,?)", (url, id_annuncio))
+                cursor.execute("INSERT INTO immagine (url, id_annuncio) VALUES(%s,%s)", (url, id_annuncio))
             
             conn.commit()
             flash("Annuncio pubblicato con successo!", "success")
@@ -371,7 +376,7 @@ def annuncio(id):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    cursor.execute("UPDATE annuncio SET visualizzazioni = visualizzazioni + 1 WHERE id_annuncio = ?", (id,))
+    cursor.execute("UPDATE annuncio SET visualizzazioni = visualizzazioni + 1 WHERE id_annuncio = %s", (id,))
     conn.commit()
 
     cursor.execute("""
@@ -379,14 +384,14 @@ def annuncio(id):
         FROM annuncio
         JOIN veicolo ON annuncio.id_veicolo = veicolo.id_veicolo
         JOIN marca ON veicolo.id_marca = marca.id_marca
-        WHERE annuncio.id_annuncio = ?
+        WHERE annuncio.id_annuncio = %s
     """, (id,))
 
     annuncio_row = cursor.fetchone()
 
     if annuncio_row:
         annuncio_dict = dict(annuncio_row)
-        cursor.execute("SELECT url FROM immagine WHERE id_annuncio = ?", (id,))
+        cursor.execute("SELECT url FROM immagine WHERE id_annuncio = %s", (id,))
         immagini = [dict(img) for img in cursor.fetchall()]
         annuncio_dict['immagini'] = immagini
     else:
@@ -419,7 +424,7 @@ def cerca():
     params = []
     
     if query:
-        sql += " AND (annuncio.titolo LIKE ? OR veicolo.modello LIKE ? OR marca.nome_marca LIKE ?)"
+        sql += " AND (annuncio.titolo LIKE %s OR veicolo.modello LIKE %s OR marca.nome_marca LIKE %s)"
         search_term = f"%{query}%"
         params.extend([search_term, search_term, search_term])
 
@@ -434,7 +439,7 @@ def cerca():
     annunci = []
     for row in cursor.fetchall():
         a_dict = dict(row)
-        cursor.execute("SELECT url FROM immagine WHERE id_annuncio = ? LIMIT 1", (a_dict['id_annuncio'],))
+        cursor.execute("SELECT url FROM immagine WHERE id_annuncio = %s LIMIT 1", (a_dict['id_annuncio'],))
         immagini = [dict(img) for img in cursor.fetchall()]
         a_dict['immagini'] = immagini
         annunci.append(a_dict)
@@ -462,19 +467,19 @@ def chat_lista():
             a.titolo as annuncio_titolo,
             a.prezzo,
             CASE 
-                WHEN c.id_acquirente = ? THEN vend.username
+                WHEN c.id_acquirente = %s THEN vend.username
                 ELSE acq.username
             END as altro_utente,
             CASE 
-                WHEN c.id_acquirente = ? THEN c.id_venditore
+                WHEN c.id_acquirente = %s THEN c.id_venditore
                 ELSE c.id_acquirente
             END as altro_utente_id,
-            (SELECT COUNT(*) FROM messaggio WHERE id_conversazione = c.id_conversazione AND id_destinatario = ? AND letto = 0) as non_letti
+            (SELECT COUNT(*) FROM messaggio WHERE id_conversazione = c.id_conversazione AND id_destinatario = %s AND letto = 0) as non_letti
         FROM conversazione c
         JOIN annuncio a ON c.id_annuncio = a.id_annuncio
         JOIN utente vend ON c.id_venditore = vend.id_utente
         JOIN utente acq ON c.id_acquirente = acq.id_utente
-        WHERE c.id_acquirente = ? OR c.id_venditore = ?
+        WHERE c.id_acquirente = %s OR c.id_venditore = %s
         ORDER BY c.ultimo_aggiornamento DESC
     """, (session["user_id"], session["user_id"], session["user_id"], session["user_id"], session["user_id"]))
     
@@ -495,7 +500,7 @@ def chat_dettaglio(id_conversazione):
     
     cursor.execute("""
         SELECT * FROM conversazione 
-        WHERE id_conversazione = ? AND (id_acquirente = ? OR id_venditore = ?)
+        WHERE id_conversazione = %s AND (id_acquirente = %s OR id_venditore = %s)
     """, (id_conversazione, session["user_id"], session["user_id"]))
     
     conversazione = cursor.fetchone()
@@ -510,9 +515,9 @@ def chat_dettaglio(id_conversazione):
     
     cursor.execute("""
         SELECT a.*, 
-               CASE WHEN a.id_utente = ? THEN 'venditore' ELSE 'acquirente' END as mio_ruolo
+               CASE WHEN a.id_utente = %s THEN 'venditore' ELSE 'acquirente' END as mio_ruolo
         FROM annuncio a
-        WHERE a.id_annuncio = ?
+        WHERE a.id_annuncio = %s
     """, (session["user_id"], conversazione_dict['id_annuncio']))
     annuncio = cursor.fetchone()
     
@@ -522,7 +527,7 @@ def chat_dettaglio(id_conversazione):
         annuncio = dict(annuncio)
     
     altro_utente_id = conversazione_dict['id_venditore'] if conversazione_dict['id_acquirente'] == session["user_id"] else conversazione_dict['id_acquirente']
-    cursor.execute("SELECT id_utente, username FROM utente WHERE id_utente = ?", (altro_utente_id,))
+    cursor.execute("SELECT id_utente, username FROM utente WHERE id_utente = %s", (altro_utente_id,))
     altro_utente = cursor.fetchone()
     
     if not altro_utente:
@@ -532,7 +537,7 @@ def chat_dettaglio(id_conversazione):
     
     cursor.execute("""
         UPDATE messaggio SET letto = 1 
-        WHERE id_conversazione = ? AND id_destinatario = ? AND letto = 0
+        WHERE id_conversazione = %s AND id_destinatario = %s AND letto = 0
     """, (id_conversazione, session["user_id"]))
     conn.commit()
     
@@ -540,7 +545,7 @@ def chat_dettaglio(id_conversazione):
         SELECT m.*, u.username as mittente_nome, u.foto_profilo
         FROM messaggio m
         JOIN utente u ON m.id_mittente = u.id_utente
-        WHERE m.id_conversazione = ?
+        WHERE m.id_conversazione = %s
         ORDER BY m.data_invio ASC
     """, (id_conversazione,))
     messaggi = [dict(row) for row in cursor.fetchall()]
@@ -572,7 +577,7 @@ def chat_invia_messaggio():
     
     cursor.execute("""
         SELECT * FROM conversazione 
-        WHERE id_conversazione = ? AND (id_acquirente = ? OR id_venditore = ?)
+        WHERE id_conversazione = %s AND (id_acquirente = %s OR id_venditore = %s)
     """, (id_conversazione, session["user_id"], session["user_id"]))
     
     conv = cursor.fetchone()
@@ -586,13 +591,13 @@ def chat_invia_messaggio():
     
     cursor.execute("""
         INSERT INTO messaggio (id_conversazione, id_mittente, id_destinatario, id_annuncio, contenuto, data_invio, letto)
-        VALUES (?, ?, ?, ?, ?, datetime('now'), 0)
+        VALUES (%s, %s, %s, %s, %s, datetime('now'), 0)
     """, (id_conversazione, session["user_id"], id_destinatario, conv_dict['id_annuncio'], messaggio))
     
     cursor.execute("""
         UPDATE conversazione 
-        SET ultimo_messaggio = ?, ultimo_aggiornamento = datetime('now')
-        WHERE id_conversazione = ?
+        SET ultimo_messaggio = %s, ultimo_aggiornamento = datetime('now')
+        WHERE id_conversazione = %s
     """, (messaggio[:100], id_conversazione))
     
     conn.commit()
@@ -621,7 +626,7 @@ def chat_nuova_conversazione(id_annuncio):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    cursor.execute("SELECT id_utente, titolo FROM annuncio WHERE id_annuncio = ?", (id_annuncio,))
+    cursor.execute("SELECT id_utente, titolo FROM annuncio WHERE id_annuncio = %s", (id_annuncio,))
     annuncio = cursor.fetchone()
     
     if not annuncio:
@@ -637,7 +642,7 @@ def chat_nuova_conversazione(id_annuncio):
     
     cursor.execute("""
         SELECT id_conversazione FROM conversazione 
-        WHERE id_annuncio = ? AND ((id_acquirente = ? AND id_venditore = ?) OR (id_acquirente = ? AND id_venditore = ?))
+        WHERE id_annuncio = %s AND ((id_acquirente = %s AND id_venditore = %s) OR (id_acquirente = %s AND id_venditore = %s))
     """, (id_annuncio, session["user_id"], annuncio_dict['id_utente'], annuncio_dict['id_utente'], session["user_id"]))
     
     conv = cursor.fetchone()
@@ -647,7 +652,7 @@ def chat_nuova_conversazione(id_annuncio):
     else:
         cursor.execute("""
             INSERT INTO conversazione (id_annuncio, id_acquirente, id_venditore, ultimo_aggiornamento)
-            VALUES (?, ?, ?, datetime('now'))
+            VALUES (%s, %s, %s, datetime('now'))
         """, (id_annuncio, session["user_id"], annuncio_dict['id_utente']))
         id_conversazione = cursor.lastrowid
         conn.commit()
@@ -668,7 +673,7 @@ def api_chat_non_letti():
     cursor.execute("""
         SELECT COUNT(*) as count FROM messaggio m
         JOIN conversazione c ON m.id_conversazione = c.id_conversazione
-        WHERE m.id_destinatario = ? AND m.letto = 0
+        WHERE m.id_destinatario = %s AND m.letto = 0
     """, (session["user_id"],))
     
     result = cursor.fetchone()
@@ -687,7 +692,7 @@ def aggiungi_preferito(id_annuncio):
     conn = connect_to_db()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT id_utente, titolo FROM annuncio WHERE id_annuncio = ? AND stato = 'attivo'", (id_annuncio,))
+    cursor.execute("SELECT id_utente, titolo FROM annuncio WHERE id_annuncio = %s AND stato = 'attivo'", (id_annuncio,))
     annuncio = cursor.fetchone()
     
     if not annuncio:
@@ -703,7 +708,7 @@ def aggiungi_preferito(id_annuncio):
         return redirect(request.referrer or url_for("home"))
     
     try:
-        cursor.execute("INSERT INTO preferiti (id_utente, id_annuncio, data_aggiunta) VALUES (?, ?, ?)", 
+        cursor.execute("INSERT INTO preferiti (id_utente, id_annuncio, data_aggiunta) VALUES (%s, %s, %s)", 
                       (session["user_id"], id_annuncio, date.today()))
         conn.commit()
         flash(f"✅ Annuncio aggiunto ai preferiti!", "success")
@@ -721,7 +726,7 @@ def rimuovi_preferito(id_annuncio):
     
     conn = connect_to_db()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM preferiti WHERE id_utente = ? AND id_annuncio = ?", (session["user_id"], id_annuncio))
+    cursor.execute("DELETE FROM preferiti WHERE id_utente = %s AND id_annuncio = %s", (session["user_id"], id_annuncio))
     conn.commit()
     cursor.close()
     conn.close()
@@ -744,7 +749,7 @@ def miei_preferiti():
         JOIN veicolo ON annuncio.id_veicolo = veicolo.id_veicolo
         JOIN marca ON veicolo.id_marca = marca.id_marca
         JOIN utente ON annuncio.id_utente = utente.id_utente
-        WHERE preferiti.id_utente = ? AND annuncio.stato = 'attivo' AND annuncio.id_utente != ?
+        WHERE preferiti.id_utente = %s AND annuncio.stato = 'attivo' AND annuncio.id_utente != %s
         ORDER BY preferiti.data_aggiunta DESC
     """, (session["user_id"], session["user_id"]))
     
@@ -767,7 +772,7 @@ def dashboard():
         FROM annuncio
         JOIN veicolo ON annuncio.id_veicolo = veicolo.id_veicolo
         JOIN marca ON veicolo.id_marca = marca.id_marca
-        WHERE annuncio.id_utente = ?
+        WHERE annuncio.id_utente = %s
         ORDER BY annuncio.data_pubblicazione DESC
     """, (session["user_id"],))
     miei_annunci = [dict(row) for row in cursor.fetchall()]
@@ -776,12 +781,12 @@ def dashboard():
         SELECT annuncio.*, preferiti.data_aggiunta
         FROM preferiti
         JOIN annuncio ON preferiti.id_annuncio = annuncio.id_annuncio
-        WHERE preferiti.id_utente = ? AND annuncio.stato = 'attivo'
+        WHERE preferiti.id_utente = %s AND annuncio.stato = 'attivo'
         ORDER BY preferiti.data_aggiunta DESC
     """, (session["user_id"],))
     miei_preferiti = [dict(row) for row in cursor.fetchall()]
     
-    cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = ? AND letto = 0", (session["user_id"],))
+    cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = %s AND letto = 0", (session["user_id"],))
     result = cursor.fetchone()
     messaggi_non_letti = result[0] if result else 0
     
@@ -790,7 +795,7 @@ def dashboard():
         FROM messaggio m
         JOIN utente u ON m.id_mittente = u.id_utente
         JOIN annuncio a ON m.id_annuncio = a.id_annuncio
-        WHERE m.id_destinatario = ?
+        WHERE m.id_destinatario = %s
         ORDER BY m.data_invio DESC
         LIMIT 5
     """, (session["user_id"],))
@@ -819,7 +824,7 @@ def miei_annunci():
         FROM annuncio
         JOIN veicolo ON annuncio.id_veicolo = veicolo.id_veicolo
         JOIN marca ON veicolo.id_marca = marca.id_marca
-        WHERE annuncio.id_utente = ?
+        WHERE annuncio.id_utente = %s
         ORDER BY annuncio.data_pubblicazione DESC
     """, (session["user_id"],))
     
@@ -835,7 +840,7 @@ def segna_venduto(id_annuncio):
     
     conn = connect_to_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE annuncio SET stato = 'venduto' WHERE id_annuncio = ? AND id_utente = ?", (id_annuncio, session["user_id"]))
+    cursor.execute("UPDATE annuncio SET stato = 'venduto' WHERE id_annuncio = %s AND id_utente = %s", (id_annuncio, session["user_id"]))
     conn.commit()
     cursor.close()
     conn.close()
@@ -848,7 +853,7 @@ def elimina_annuncio(id_annuncio):
     
     conn = connect_to_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE annuncio SET stato = 'eliminato' WHERE id_annuncio = ? AND id_utente = ?", (id_annuncio, session["user_id"]))
+    cursor.execute("UPDATE annuncio SET stato = 'eliminato' WHERE id_annuncio = %s AND id_utente = %s", (id_annuncio, session["user_id"]))
     conn.commit()
     cursor.close()
     conn.close()
@@ -868,7 +873,7 @@ def modifica_annuncio(id_annuncio):
         FROM annuncio
         JOIN veicolo ON annuncio.id_veicolo = veicolo.id_veicolo
         JOIN marca ON veicolo.id_marca = marca.id_marca
-        WHERE annuncio.id_annuncio = ? AND annuncio.id_utente = ?
+        WHERE annuncio.id_annuncio = %s AND annuncio.id_utente = %s
     """, (id_annuncio, session["user_id"]))
     
     annuncio = cursor.fetchone()
@@ -887,9 +892,9 @@ def modifica_annuncio(id_annuncio):
         chilometraggio = request.form["chilometraggio"]
         colore = request.form["colore"]
         
-        cursor.execute("UPDATE annuncio SET titolo = ?, descrizione = ?, prezzo = ? WHERE id_annuncio = ?", 
+        cursor.execute("UPDATE annuncio SET titolo = %s, descrizione = %s, prezzo = %s WHERE id_annuncio = %s", 
                       (titolo, descrizione, prezzo, id_annuncio))
-        cursor.execute("UPDATE veicolo SET modello = ?, anno = ?, chilometraggio = ?, colore = ? WHERE id_veicolo = ?",
+        cursor.execute("UPDATE veicolo SET modello = %s, anno = %s, chilometraggio = %s, colore = %s WHERE id_veicolo = %s",
                       (modello, anno, chilometraggio, colore, annuncio['id_veicolo']))
         conn.commit()
         cursor.close()
@@ -916,7 +921,7 @@ def api_notifiche():
     
     conn = connect_to_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = ? AND letto = 0", (session["user_id"],))
+    cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = %s AND letto = 0", (session["user_id"],))
     result = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -929,7 +934,7 @@ def segna_letto(id_messaggio):
     
     conn = connect_to_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE messaggio SET letto = 1 WHERE id_messaggio = ? AND id_destinatario = ?", (id_messaggio, session["user_id"]))
+    cursor.execute("UPDATE messaggio SET letto = 1 WHERE id_messaggio = %s AND id_destinatario = %s", (id_messaggio, session["user_id"]))
     conn.commit()
     cursor.close()
     conn.close()
