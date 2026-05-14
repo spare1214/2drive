@@ -299,36 +299,7 @@ def logout():
 
 # ==================== VERIFICA EMAIL ====================
 
-@app.route("/verifica/<token>")
-def verifica(token):
-    conn = connect_to_db()
-    
-    if IS_RENDER:
-        cursor = conn.cursor()
-    else:
-        cursor = conn.cursor(dictionary=True)
 
-    cursor.execute(
-        "SELECT id_utente FROM utente WHERE token_verifica=%s",
-        (token,)
-    )
-
-    result = cursor.fetchone()
-
-    if result:
-        user_id = result['id_utente'] if isinstance(result, dict) else result[0]
-        cursor.execute(
-            "UPDATE utente SET verificato=1, token_verifica=NULL WHERE id_utente=%s",
-            (user_id,)
-        )
-        conn.commit()
-        message = "Account verificato! Ora puoi fare login"
-    else:
-        message = "Token non valido"
-
-    cursor.close()
-    conn.close()
-    return message
 
 # ==================== INSERISCI ANNUNCIO ====================
 
