@@ -59,7 +59,7 @@ def hash_password(password):
 def invia_mail_verifica(email_destinatario, username, token):
     # Versione semplificata - verifica automatica
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     cursor.execute("UPDATE utente SET verificato=1 WHERE username=%s", (username,))
     conn.commit()
     cursor.close()
@@ -170,7 +170,7 @@ def register():
         token = secrets.token_urlsafe(32)
 
         conn = connect_to_db()
-        cursor = conn.cursor()
+        cursor = get_cursor(conn)
 
         cursor.execute("SELECT * FROM utente WHERE username=%s OR email=%s", (username, email))
 
@@ -206,7 +206,7 @@ def login():
         password = hash_password(request.form["password"])
 
         conn = connect_to_db()
-        cursor = conn.cursor()
+        cursor = get_cursor(conn)
 
         cursor.execute("SELECT id_utente, password, verificato FROM utente WHERE username=%s", (username,))
 
@@ -245,7 +245,7 @@ def logout():
 @app.route("/verifica/<token>")
 def verifica(token):
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     cursor.execute("UPDATE utente SET verificato=1, token_verifica=NULL WHERE token_verifica=%s", (token,))
     conn.commit()
     cursor.close()
@@ -302,7 +302,7 @@ def inserisci():
                 immagini_urls.append(f"/static/uploads/{unique_filename}")
         
         conn = connect_to_db()
-        cursor = conn.cursor()
+        cursor = get_cursor(conn)
         
         try:
             cursor.execute("""
@@ -344,7 +344,7 @@ def inserisci():
         return redirect(url_for("home"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("SELECT * FROM marca ORDER BY nome_marca")
     marche = cursor.fetchall()
@@ -362,7 +362,7 @@ def inserisci():
 @app.route("/annuncio/<id>")
 def annuncio(id):
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
 
     cursor.execute("UPDATE annuncio SET visualizzazioni = visualizzazioni + 1 WHERE id_annuncio = %s", (id,))
     conn.commit()
@@ -401,7 +401,7 @@ def cerca():
     sort = request.args.get('sort', 'recent')
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     sql = """
         SELECT annuncio.*, veicolo.*, marca.nome_marca
@@ -445,7 +445,7 @@ def chat_lista():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT DISTINCT 
@@ -484,7 +484,7 @@ def chat_dettaglio(id_conversazione):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT * FROM conversazione 
@@ -560,7 +560,7 @@ def chat_invia_messaggio():
         return jsonify({"success": False, "error": "Messaggio vuoto"})
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT * FROM conversazione 
@@ -610,7 +610,7 @@ def chat_nuova_conversazione(id_annuncio):
         return jsonify({"success": False, "error": "Non autenticato"})
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("SELECT id_utente, titolo FROM annuncio WHERE id_annuncio = %s", (id_annuncio,))
     annuncio = cursor.fetchone()
@@ -654,7 +654,7 @@ def api_chat_non_letti():
         return jsonify({"non_letti": 0})
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT COUNT(*) as count FROM messaggio m
@@ -677,7 +677,7 @@ def aggiungi_preferito(id_annuncio):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("SELECT id_utente, titolo FROM annuncio WHERE id_annuncio = %s AND stato = 'attivo'", (id_annuncio,))
     annuncio = cursor.fetchone()
@@ -712,7 +712,7 @@ def rimuovi_preferito(id_annuncio):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     cursor.execute("DELETE FROM preferiti WHERE id_utente = %s AND id_annuncio = %s", (session["user_id"], id_annuncio))
     conn.commit()
     cursor.close()
@@ -725,7 +725,7 @@ def miei_preferiti():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT annuncio.*, veicolo.modello, veicolo.anno, marca.nome_marca, 
@@ -752,7 +752,7 @@ def dashboard():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT annuncio.*, veicolo.modello, veicolo.anno, marca.nome_marca
@@ -803,7 +803,7 @@ def miei_annunci():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT annuncio.*, veicolo.modello, veicolo.anno, marca.nome_marca
@@ -827,7 +827,7 @@ def segna_venduto(id_annuncio):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     cursor.execute("UPDATE annuncio SET stato = 'venduto' WHERE id_annuncio = %s AND id_utente = %s", (id_annuncio, session["user_id"]))
     conn.commit()
     cursor.close()
@@ -840,7 +840,7 @@ def elimina_annuncio(id_annuncio):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     cursor.execute("UPDATE annuncio SET stato = 'eliminato' WHERE id_annuncio = %s AND id_utente = %s", (id_annuncio, session["user_id"]))
     conn.commit()
     cursor.close()
@@ -854,7 +854,7 @@ def modifica_annuncio(id_annuncio):
     
     conn = connect_to_db()
     
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT annuncio.*, veicolo.*, marca.nome_marca
@@ -910,7 +910,7 @@ def api_notifiche():
         return jsonify({"messaggi_non_letti": 0})
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     cursor.execute("SELECT COUNT(*) as count FROM messaggio WHERE id_destinatario = %s AND letto = 0", (session["user_id"],))
     result = cursor.fetchone()
     cursor.close()
@@ -923,7 +923,7 @@ def segna_letto(id_messaggio):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     cursor.execute("UPDATE messaggio SET letto = 1 WHERE id_messaggio = %s AND id_destinatario = %s", (id_messaggio, session["user_id"]))
     conn.commit()
     cursor.close()
@@ -949,7 +949,7 @@ def valuta_utente(id_utente, id_annuncio):
         return redirect(request.referrer)
     
     conn = connect_to_db()
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT * FROM messaggio 
@@ -990,7 +990,7 @@ def valuta_utente(id_utente, id_annuncio):
 def recensioni_utente(id_utente):
     conn = connect_to_db()
     
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
     
     cursor.execute("""
         SELECT u.*, 
@@ -1040,7 +1040,7 @@ def init_db_online():
         return "Questo comando funziona solo online su Render!"
     try:
         conn = connect_to_db()
-        cursor = conn.cursor()
+        cursor = get_cursor(conn)
         
         # Schema completo convertito dal tuo Dump MySQL
         cursor.execute("""
