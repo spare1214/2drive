@@ -35,11 +35,8 @@ def connect_to_db():
         db_url = os.environ.get('DATABASE_URL')
         if db_url and db_url.startswith("postgres://"):
             db_url = db_url.replace("postgres://", "postgresql://", 1)
-        # PostgreSQL online
-        return psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+        return psycopg2.connect(db_url)
     else:
-        # MySQL locale (aggiungi dictionary=True)
-        import mysql.connector
         return mysql.connector.connect(
             host="localhost",
             user="root",
@@ -47,12 +44,11 @@ def connect_to_db():
             database="portale_vendita_veicoli"
         )
 
-def dict_factory(cursor, row):
-    """Converte una riga in dizionario"""
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
+def get_cursor(conn):
+    if IS_RENDER:
+        return conn.cursor(cursor_factory=RealDictCursor) # Per PostgreSQL
+    else:
+        return conn.cursor(dictionary=True) # Per MySQL
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -116,8 +112,7 @@ def home():
     offset = (page - 1) * per_page
 
     conn = connect_to_db()
-    conn.row_factory = dict_factory
-    cursor = conn.cursor()
+    cursor = get_cursor(conn)
 
     cursor.execute("""
         SELECT COUNT(DISTINCT annuncio.id_annuncio) as total
@@ -211,7 +206,6 @@ def login():
         password = hash_password(request.form["password"])
 
         conn = connect_to_db()
-        conn.row_factory = dict_factory
         cursor = conn.cursor()
 
         cursor.execute("SELECT id_utente, password, verificato FROM utente WHERE username=%s", (username,))
@@ -350,7 +344,6 @@ def inserisci():
         return redirect(url_for("home"))
     
     conn = connect_to_db()
-    conn.row_factory = dict_factory
     cursor = conn.cursor()
     
     cursor.execute("SELECT * FROM marca ORDER BY nome_marca")
@@ -369,7 +362,6 @@ def inserisci():
 @app.route("/annuncio/<id>")
 def annuncio(id):
     conn = connect_to_db()
-    conn.row_factory = dict_factory
     cursor = conn.cursor()
 
     cursor.execute("UPDATE annuncio SET visualizzazioni = visualizzazioni + 1 WHERE id_annuncio = %s", (id,))
@@ -409,7 +401,6 @@ def cerca():
     sort = request.args.get('sort', 'recent')
     
     conn = connect_to_db()
-    conn.row_factory = dict_factory
     cursor = conn.cursor()
     
     sql = """
@@ -454,7 +445,6 @@ def chat_lista():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    conn.row_factory = dict_factory
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -494,7 +484,6 @@ def chat_dettaglio(id_conversazione):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    conn.row_factory = dict_factory
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -736,7 +725,6 @@ def miei_preferiti():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    conn.row_factory = dict_factory
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -764,7 +752,6 @@ def dashboard():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    conn.row_factory = dict_factory
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -816,7 +803,6 @@ def miei_annunci():
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    conn.row_factory = dict_factory
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -867,7 +853,7 @@ def modifica_annuncio(id_annuncio):
         return redirect(url_for("login"))
     
     conn = connect_to_db()
-    conn.row_factory = dict_factory
+    
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -1003,7 +989,7 @@ def valuta_utente(id_utente, id_annuncio):
 @app.route("/recensioni/<int:id_utente>")
 def recensioni_utente(id_utente):
     conn = connect_to_db()
-    conn.row_factory = dict_factory
+    
     cursor = conn.cursor()
     
     cursor.execute("""
