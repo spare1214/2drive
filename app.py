@@ -1037,110 +1037,146 @@ def handle_typing(data):
 @app.route("/init-db-online")
 def init_db_online():
     if not IS_RENDER:
-        return "Questo comando funziona solo online su Render!"
+        return "❌ Questo comando funziona solo online su Render!"
     try:
         conn = connect_to_db()
         cursor = get_cursor(conn)
         
-        # Schema completo convertito dal tuo Dump MySQL
+        # Crea tutte le tabelle
         cursor.execute("""
+            -- Tabella marca
             CREATE TABLE IF NOT EXISTS marca (
                 id_marca SERIAL PRIMARY KEY,
                 nome_marca VARCHAR(50) NOT NULL
             );
-
+            
+            -- Tabella categoria
             CREATE TABLE IF NOT EXISTS categoria (
                 id_categoria SERIAL PRIMARY KEY,
-                nome_categoria VARCHAR(50) NOT NULL
+                tipo_categoria VARCHAR(50) NOT NULL
             );
-
+            
+            -- Tabella utente
             CREATE TABLE IF NOT EXISTS utente (
                 id_utente SERIAL PRIMARY KEY,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
-                nome VARCHAR(50),
-                cognome VARCHAR(50),
-                data_registrazione DATE,
+                nome VARCHAR(50) NOT NULL,
+                cognome VARCHAR(50) NOT NULL,
+                data_registrazione DATE NOT NULL,
                 verificato BOOLEAN DEFAULT FALSE,
                 token_verifica VARCHAR(255),
+                foto_profilo VARCHAR(500),
+                bio VARCHAR(500),
                 media_voti DECIMAL(3,2) DEFAULT 0,
-                totale_recensioni INTEGER DEFAULT 0,
-                foto_profilo TEXT
+                totale_recensioni INT DEFAULT 0
             );
-
+            
+            -- Tabella veicolo
             CREATE TABLE IF NOT EXISTS veicolo (
                 id_veicolo SERIAL PRIMARY KEY,
                 modello VARCHAR(100) NOT NULL,
-                anno INTEGER,
+                anno INT NOT NULL,
                 data_immatricolazione DATE,
                 targa VARCHAR(20),
-                carburante VARCHAR(30),
-                cambio VARCHAR(30),
-                chilometraggio INTEGER,
+                carburante VARCHAR(20),
+                cambio VARCHAR(20),
+                chilometraggio INT NOT NULL,
                 colore VARCHAR(30),
-                numero_posti INTEGER,
+                numero_posti INT,
                 luogo VARCHAR(100),
-                id_marca INTEGER REFERENCES marca(id_marca),
-                id_categoria INTEGER REFERENCES categoria(id_categoria),
-                prezzo DECIMAL(10,2),
-                telefono VARCHAR(20)
+                id_marca INT REFERENCES marca(id_marca),
+                id_categoria INT REFERENCES categoria(id_categoria),
+                prezzo DECIMAL(12,2) NOT NULL,
+                telefono VARCHAR(15)
             );
-
+            
+            -- Tabella annuncio
             CREATE TABLE IF NOT EXISTS annuncio (
                 id_annuncio SERIAL PRIMARY KEY,
-                titolo VARCHAR(255) NOT NULL,
+                titolo VARCHAR(200) NOT NULL,
                 descrizione TEXT,
-                data_pubblicazione DATE,
+                data_pubblicazione DATE NOT NULL,
                 stato VARCHAR(20) DEFAULT 'attivo',
-                id_utente INTEGER REFERENCES utente(id_utente),
-                id_veicolo INTEGER REFERENCES veicolo(id_veicolo),
-                prezzo DECIMAL(10,2),
-                telefono_visibile BOOLEAN DEFAULT TRUE,
-                visualizzazioni INTEGER DEFAULT 0
+                visualizzazioni INT DEFAULT 0,
+                id_utente INT REFERENCES utente(id_utente),
+                id_veicolo INT REFERENCES veicolo(id_veicolo),
+                prezzo DECIMAL(12,2) NOT NULL,
+                telefono_visibile BOOLEAN DEFAULT TRUE
             );
-
+            
+            -- Tabella immagine
             CREATE TABLE IF NOT EXISTS immagine (
                 id_immagine SERIAL PRIMARY KEY,
-                url TEXT NOT NULL,
-                id_annuncio INTEGER REFERENCES annuncio(id_annuncio) ON DELETE CASCADE
+                url VARCHAR(500) NOT NULL,
+                id_annuncio INT REFERENCES annuncio(id_annuncio) ON DELETE CASCADE
             );
-
+            
+            -- Tabella preferiti
+            CREATE TABLE IF NOT EXISTS preferiti (
+                id_preferito SERIAL PRIMARY KEY,
+                id_utente INT REFERENCES utente(id_utente),
+                id_annuncio INT REFERENCES annuncio(id_annuncio),
+                data_aggiunta DATE NOT NULL,
+                UNIQUE(id_utente, id_annuncio)
+            );
+            
+            -- Tabella conversazione
             CREATE TABLE IF NOT EXISTS conversazione (
                 id_conversazione SERIAL PRIMARY KEY,
-                id_annuncio INTEGER REFERENCES annuncio(id_annuncio),
-                id_acquirente INTEGER REFERENCES utente(id_utente),
-                id_venditore INTEGER REFERENCES utente(id_utente),
+                id_annuncio INT REFERENCES annuncio(id_annuncio),
+                id_acquirente INT REFERENCES utente(id_utente),
+                id_venditore INT REFERENCES utente(id_utente),
                 ultimo_messaggio TEXT,
-                ultimo_aggiornamento TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ultimo_aggiornamento TIMESTAMP
             );
-
+            
+            -- Tabella messaggio
             CREATE TABLE IF NOT EXISTS messaggio (
                 id_messaggio SERIAL PRIMARY KEY,
-                id_conversazione INTEGER REFERENCES conversazione(id_conversazione),
-                id_mittente INTEGER REFERENCES utente(id_utente),
-                id_destinatario INTEGER REFERENCES utente(id_utente),
-                id_annuncio INTEGER,
-                contenuto TEXT,
-                data_invio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                id_conversazione INT REFERENCES conversazione(id_conversazione),
+                id_mittente INT REFERENCES utente(id_utente),
+                id_destinatario INT REFERENCES utente(id_utente),
+                id_annuncio INT REFERENCES annuncio(id_annuncio),
+                contenuto TEXT NOT NULL,
+                data_invio TIMESTAMP NOT NULL,
                 letto BOOLEAN DEFAULT FALSE
             );
+            
+            -- Tabella recensione
+            CREATE TABLE IF NOT EXISTS recensione (
+                id_recensione SERIAL PRIMARY KEY,
+                id_recensore INT REFERENCES utente(id_utente),
+                id_recensito INT REFERENCES utente(id_utente),
+                id_annuncio INT REFERENCES annuncio(id_annuncio),
+                voto INT CHECK (voto BETWEEN 1 AND 5),
+                commento TEXT,
+                data_recensione TIMESTAMP
+            );
         """)
-
-        # Inserimento dati iniziali per le tendine (se vuote)
-        marche = ['Fiat', 'Alfa Romeo', 'Audi', 'BMW', 'Mercedes', 'Volkswagen', 'Ford', 'Toyota']
-        for m in marche:
-            cursor.execute("INSERT INTO marca (nome_marca) SELECT %s WHERE NOT EXISTS (SELECT 1 FROM marca WHERE nome_marca=%s)", (m, m))
         
-        categorie = ['Auto', 'Moto', 'Furgone', 'Camper']
-        for c in categorie:
-            cursor.execute("INSERT INTO categoria (nome_categoria) SELECT %s WHERE NOT EXISTS (SELECT 1 FROM categoria WHERE nome_categoria=%s)", (c, c))
+        # Inserisci dati di base
+        cursor.execute("INSERT INTO marca (nome_marca) VALUES ('Fiat'), ('Volkswagen'), ('Toyota'), ('Ford'), ('BMW'), ('Audi'), ('Mercedes'), ('Renault') ON CONFLICT DO NOTHING;")
+        cursor.execute("INSERT INTO categoria (tipo_categoria) VALUES ('Auto'), ('Moto'), ('Furgone'), ('Camper'), ('Scooter') ON CONFLICT DO NOTHING;")
+        
+        # Inserisci utente admin se non esiste (password: admin)
+        cursor.execute("""
+            INSERT INTO utente (username, password, email, nome, cognome, data_registrazione, verificato)
+            SELECT 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 
+                   'admin@portaleveicoli.it', 'Admin', 'Portale', CURRENT_DATE, TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM utente WHERE username='admin');
+        """)
         
         conn.commit()
         cursor.close()
         conn.close()
-        return "✅ Database di Render inizializzato con tutte le tabelle del Dump!"
+        
+        return "✅ Database inizializzato con successo! Tutte le tabelle sono state create."
+        
     except Exception as e:
-        return f"❌ Errore durante l'inizializzazione: {str(e)}"
+        return f"❌ Errore: {str(e)}"
+
+
 if __name__ == "__main__":
     socketio.run(app, debug=True)
