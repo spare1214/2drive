@@ -262,10 +262,7 @@ def login():
 
     return render_template("login_register.html", panel="login")
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("home"))
+
 
 @app.route("/verifica/<token>")
 def verifica(token):
