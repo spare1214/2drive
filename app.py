@@ -33,12 +33,17 @@ def get_placeholder():
     return '?' if IS_RENDER else '%s'
 
 def connect_to_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="root",
-        database="portale_vendita_veicoli"
-    )
+    if IS_RENDER:
+        # Su Render - usa SQLite
+        return sqlite3.connect('database.db', check_same_thread=False)
+    else:
+        # In locale - usa MySQL
+        return mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="root",  # <- Metti la tua password reale
+            database="portale_vendita_veicoli"
+        )
 
 def dict_factory(cursor, row):
     d = {}
