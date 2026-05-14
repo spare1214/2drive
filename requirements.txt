@@ -1,4 +1,6 @@
 Flask
+flask-socketio
+psycopg2-binary
 Werkzeug
 flask-socketio
 python-socketio
