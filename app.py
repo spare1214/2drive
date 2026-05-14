@@ -10,8 +10,7 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_socketio import SocketIO, emit, join_room
 import json
-import psycopg2
-from psycopg2.extras import RealDictCursor
+
 
 
 app = Flask(__name__)
