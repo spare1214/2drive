@@ -10,6 +10,8 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_socketio import SocketIO, emit, join_room
 import json
+import psycopg2 # Aggiungi questo import in alto
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -26,8 +28,18 @@ EMAIL_MITTENTE = "mohamedighir56@gmail.com"
 EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 
 def connect_to_db():
-    """Connessione a SQLite (funziona ovunque)"""
-    return sqlite3.connect('database.db', check_same_thread=False)
+    if IS_RENDER:
+        # Recupera l'URL del database dalle variabili d'ambiente di Render
+        db_url = os.environ.get('DATABASE_URL') 
+        return psycopg2.connect(db_url)
+    else:
+        # Rimane la tua connessione locale a MySQL Workbench
+        return mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="root",
+            database="portale_vendita_veicoli"
+        )
 
 def dict_factory(cursor, row):
     """Converte una riga in dizionario"""
