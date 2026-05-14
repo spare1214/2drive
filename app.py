@@ -27,17 +27,19 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 EMAIL_MITTENTE = "mohamedighir56@gmail.com"
 EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 
+# Aggiungi questo sotto gli import
+IS_RENDER = os.environ.get('RENDER', 'False') == 'True'
 
 def connect_to_db():
     if IS_RENDER:
-        # Recupera l'URL dalle impostazioni di Render (DATABASE_URL)
         db_url = os.environ.get('DATABASE_URL')
-        # Corregge il link per renderlo leggibile a PostgreSQL
         if db_url and db_url.startswith("postgres://"):
             db_url = db_url.replace("postgres://", "postgresql://", 1)
-        return psycopg2.connect(db_url)
+        # PostgreSQL online
+        return psycopg2.connect(db_url, cursor_factory=RealDictCursor)
     else:
-        # Resta invariato per il tuo MySQL locale
+        # MySQL locale (aggiungi dictionary=True)
+        import mysql.connector
         return mysql.connector.connect(
             host="localhost",
             user="root",
