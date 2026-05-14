@@ -26,11 +26,13 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 EMAIL_MITTENTE = "mohamedighir56@gmail.com"
 EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
 
-# VARIABILE PER CAPIRE SE SIAMO SU RENDER
 IS_RENDER = os.environ.get('RENDER', False)
 
+def get_placeholder():
+    """Restituisce il placeholder corretto per il database"""
+    return '?' if IS_RENDER else '%s'
+
 def connect_to_db():
-    """Connessione al database - MySQL in locale, SQLite su Render"""
     if IS_RENDER:
         return sqlite3.connect('database.db', check_same_thread=False)
     else:
@@ -42,7 +44,6 @@ def connect_to_db():
         )
 
 def dict_factory(cursor, row):
-    """Converte una riga in dizionario per SQLite"""
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
@@ -119,6 +120,7 @@ def home():
     page = request.args.get('page', 1, type=int)
     per_page = 12
     offset = (page - 1) * per_page
+    p = get_placeholder()
 
     conn = connect_to_db()
     
@@ -138,7 +140,7 @@ def home():
     total_result = cursor.fetchone()
     total = total_result['total'] if total_result else 0
 
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT DISTINCT annuncio.*, veicolo.modello, veicolo.anno, veicolo.chilometraggio, 
                veicolo.carburante, veicolo.cambio, veicolo.id_marca, marca.nome_marca, 
                utente.username as nome_utente
@@ -148,13 +150,13 @@ def home():
         JOIN utente ON annuncio.id_utente = utente.id_utente
         WHERE annuncio.stato = 'attivo'
         ORDER BY annuncio.data_pubblicazione DESC
-        LIMIT %s OFFSET %s
+        LIMIT {p} OFFSET {p}
     """, (per_page, offset))
 
     annunci = cursor.fetchall()
     
     for annuncio in annunci:
-        cursor.execute("SELECT url FROM immagine WHERE id_annuncio = %s LIMIT 1", (annuncio['id_annuncio'],))
+        cursor.execute(f"SELECT url FROM immagine WHERE id_annuncio = {p} LIMIT 1", (annuncio['id_annuncio'],))
         immagini = cursor.fetchall()
         annuncio['immagini'] = immagini
     
@@ -174,6 +176,7 @@ def home():
 @app.route("/register", methods=["GET","POST"])
 def register():
     error = None
+    p = get_placeholder()
 
     if request.method == "POST":
         nome = request.form["nome"]
@@ -190,10 +193,7 @@ def register():
         else:
             cursor = conn.cursor(dictionary=True)
 
-        cursor.execute(
-            "SELECT * FROM utente WHERE username=%s OR email=%s",
-            (username, email)
-        )
+        cursor.execute(f"SELECT * FROM utente WHERE username={p} OR email={p}", (username, email))
 
         if cursor.fetchone():
             error = "Username o email già esistente"
@@ -201,10 +201,10 @@ def register():
             conn.close()
             return render_template("login_register.html", panel="register", error=error)
 
-        cursor.execute("""
+        cursor.execute(f"""
             INSERT INTO utente
             (username,password,email,nome,cognome,data_registrazione,verificato,token_verifica)
-            VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES({p},{p},{p},{p},{p},{p},{p},{p})
         """, (username, password, email, nome, cognome, date.today(), False, token))
 
         conn.commit()
@@ -223,6 +223,7 @@ def register():
 @app.route("/login", methods=["GET","POST"])
 def login():
     error = None
+    p = get_placeholder()
 
     if request.method == "POST":
         username = request.form["username"]
@@ -236,10 +237,7 @@ def login():
         else:
             cursor = conn.cursor(dictionary=True)
 
-        cursor.execute(
-            "SELECT id_utente, password, verificato FROM utente WHERE username=%s",
-            (username,)
-        )
+        cursor.execute(f"SELECT id_utente, password, verificato FROM utente WHERE username={p}", (username,))
 
         result = cursor.fetchone()
 
@@ -263,6 +261,37 @@ def login():
             return render_template("login_register.html", panel="login", error=error)
 
     return render_template("login_register.html", panel="login")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("home"))
+
+@app.route("/verifica/<token>")
+def verifica(token):
+    p = get_placeholder()
+    conn = connect_to_db()
+    
+    if IS_RENDER:
+        cursor = conn.cursor()
+    else:
+        cursor = conn.cursor(dictionary=True)
+
+    cursor.execute(f"SELECT id_utente FROM utente WHERE token_verifica={p}", (token,))
+
+    result = cursor.fetchone()
+
+    if result:
+        user_id = result['id_utente'] if isinstance(result, dict) else result[0]
+        cursor.execute(f"UPDATE utente SET verificato=1, token_verifica=NULL WHERE id_utente={p}", (user_id,))
+        conn.commit()
+        message = "Account verificato! Ora puoi fare login"
+    else:
+        message = "Token non valido"
+
+    cursor.close()
+    conn.close()
+    return message
 
 # ==================== LOGOUT ====================
 
