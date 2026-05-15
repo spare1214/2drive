@@ -185,39 +185,47 @@ def home():
 
 @app.route("/register", methods=["GET","POST"])
 def register():
+
     error = None
 
     if request.method == "POST":
+
         nome = request.form["nome"]
         cognome = request.form["cognome"]
         username = request.form["username"]
         email = request.form["email"]
         password = hash_password(request.form["password"])
+
         token = secrets.token_urlsafe(32)
 
         conn = connect_to_db()
-        cursor = get_cursor(conn)
+        cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM utente WHERE username=%s OR email=%s", (username, email))
+        cursor.execute(
+            "SELECT * FROM utente WHERE username=%s OR email=%s",
+            (username, email)
+        )
 
         if cursor.fetchone():
             error = "Username o email già esistente"
-            cursor.close()
-            conn.close()
             return render_template("login_register.html", panel="register", error=error)
 
         cursor.execute("""
-            INSERT INTO utente
-            (username,password,email,nome,cognome,data_registrazione,verificato,token_verifica)
-            VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
+        INSERT INTO utente
+        (username,password,email,nome,cognome,data_registrazione,verificato,token_verifica)
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
         """, (username, password, email, nome, cognome, date.today(), False, token))
 
         conn.commit()
+
         cursor.close()
         conn.close()
 
-        flash("Registrazione completata! Ora puoi fare login.", "success")
-        return render_template("login_register.html", panel="login", error=error)
+        # Invia email di verifica
+        invia_mail_verifica(email, username, token)
+
+        # Passa l'email alla pagina di conferma
+        return render_template("verifica_inviata.html", email=email)
 
     return render_template("login_register.html", panel="register")
 
