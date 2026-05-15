@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifica email - TwoDrive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .verifica-card {
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            padding: 3rem;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .email-icon {
+            font-size: 80px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #0B0058;
+            margin-bottom: 1rem;
+        }
+        .email-address {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            color: #0B0058;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+        .btn-email {
+            background: #667eea;
+            color: white;
+            padding: 14px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .btn-email:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        .btn-home {
+            background: #48bb78;
+            color: white;
+            padding: 14px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .btn-home:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+        .warning-text {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #999;
+        }
+        .warning-text a {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="verifica-card">
+        <div class="email-icon">
+            <i class="fas fa-envelope-open-text"></i>
+        </div>
+        
+        <h2>📧 Verifica la tua email</h2>
+        
+        <p>Abbiamo inviato un link di verifica a:</p>
+        
+        <div class="email-address">
+            <i class="fas fa-at"></i> {{ email }}
+        </div>
+        
+        <p>
+            Clicca sul link nella email per attivare il tuo account.<br>
+            <strong>Non potrai accedere fino alla verifica!</strong>
+        </p>
+        
+        <div>
+            <a href="https://mail.google.com" target="_blank" class="btn-email">
+                <i class="fab fa-google"></i> Vai a Gmail
+            </a>
+            <a href="/" class="btn-home">
+                <i class="fas fa-home"></i> Torna alla Home
+            </a>
+        </div>
+        
+        <div class="warning-text">
+            <i class="fas fa-info-circle"></i> 
+            Non hai ricevuto l'email? Controlla la cartella <strong>Spam</strong><br>
+            <a href="/register">← Torna alla registrazione</a>
+        </div>
+    </div>
+</body>
+</html>
