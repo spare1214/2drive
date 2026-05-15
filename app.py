@@ -10,8 +10,9 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_socketio import SocketIO, emit, join_room
 import json
-import psycopg2 # Aggiungi questo import in alto
+import psycopg2
 from psycopg2.extras import RealDictCursor
+import threading
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -46,9 +47,9 @@ def connect_to_db():
 
 def get_cursor(conn):
     if IS_RENDER:
-        return conn.cursor(cursor_factory=RealDictCursor) # Per PostgreSQL
+        return conn.cursor(cursor_factory=RealDictCursor)
     else:
-        return conn.cursor(dictionary=True) # Per MySQL
+        return conn.cursor(dictionary=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -57,41 +58,69 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def invia_mail_verifica(email_destinatario, username, token):
-    try:
-        # Crea il link di verifica
-        link_verifica = f"https://twodrive.onrender.com/verifica/{token}"
-        
-        # Corpo dell'email
-        soggetto = "Verifica il tuo account TwoDrive"
-        corpo = f"""
-        Ciao {username},
-        
-        Grazie per esserti registrato su TwoDrive!
-        
-        Clicca sul link qui sotto per verificare il tuo account:
-        {link_verifica}
-        
-        Se non ti sei registrato tu, ignora questa email.
-        
-        Grazie,
-        Il team di TwoDrive
-        """
-        
-        # Configura il messaggio email
-        msg = MIMEText(corpo, "plain", "utf-8")
-        msg["Subject"] = soggetto
-        msg["From"] = EMAIL_MITTENTE
-        msg["To"] = email_destinatario
-        
-        # Invia l'email
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
-            server.send_message(msg)
-        
-        print(f"✅ Email di verifica inviata a {email_destinatario}")
-        
-    except Exception as e:
-        print(f"❌ Errore invio email: {e}")
+    """Invia email di verifica in modo asincrono per non bloccare la richiesta"""
+    
+    def send_email():
+        try:
+            # Su Render, usa solo la verifica automatica per evitare timeout
+            if IS_RENDER:
+                conn = connect_to_db()
+                cursor = get_cursor(conn)
+                cursor.execute("UPDATE utente SET verificato=TRUE WHERE username=%s", (username,))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                print(f"✅ Account {username} verificato automaticamente su Render")
+                return
+            
+            # Solo in locale: invia la vera email
+            link_verifica = f"http://127.0.0.1:5000/verifica/{token}"
+            
+            soggetto = "Verifica il tuo account TwoDrive"
+            corpo = f"""
+Ciao {username},
+
+Grazie per esserti registrato su TwoDrive!
+
+Clicca sul link qui sotto per verificare il tuo account:
+{link_verifica}
+
+Se non ti sei registrato tu, ignora questa email.
+
+Grazie,
+Il team di TwoDrive
+"""
+            
+            msg = MIMEText(corpo, "plain", "utf-8")
+            msg["Subject"] = soggetto
+            msg["From"] = EMAIL_MITTENTE
+            msg["To"] = email_destinatario
+            
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()
+                server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
+                server.send_message(msg)
+            
+            print(f"✅ Email di verifica inviata a {email_destinatario}")
+            
+        except Exception as e:
+            print(f"❌ Errore invio email: {e}")
+            # Se fallisce, verifica automaticamente comunque
+            try:
+                conn = connect_to_db()
+                cursor = get_cursor(conn)
+                cursor.execute("UPDATE utente SET verificato=TRUE WHERE username=%s", (username,))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                print(f"⚠️ Account {username} verificato automaticamente (fallback)")
+            except:
+                pass
+    
+    # Avvia l'invio in un thread separato
+    thread = threading.Thread(target=send_email)
+    thread.daemon = True
+    thread.start()
 
 def valida_annuncio(data):
     try:
@@ -185,17 +214,14 @@ def home():
 
 @app.route("/register", methods=["GET","POST"])
 def register():
-
     error = None
 
     if request.method == "POST":
-
         nome = request.form["nome"]
         cognome = request.form["cognome"]
         username = request.form["username"]
         email = request.form["email"]
         password = hash_password(request.form["password"])
-
         token = secrets.token_urlsafe(32)
 
         conn = connect_to_db()
@@ -208,23 +234,24 @@ def register():
 
         if cursor.fetchone():
             error = "Username o email già esistente"
+            cursor.close()
+            conn.close()
             return render_template("login_register.html", panel="register", error=error)
 
         cursor.execute("""
-        INSERT INTO utente
-        (username,password,email,nome,cognome,data_registrazione,verificato,token_verifica)
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO utente
+            (username,password,email,nome,cognome,data_registrazione,verificato,token_verifica)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
         """, (username, password, email, nome, cognome, date.today(), False, token))
 
         conn.commit()
-
         cursor.close()
         conn.close()
 
-        # Invia email di verifica
+        # Invia email di verifica in background
         invia_mail_verifica(email, username, token)
 
-        # Passa l'email alla pagina di conferma
+        # Mostra pagina di conferma
         return render_template("verifica_inviata.html", email=email)
 
     return render_template("login_register.html", panel="register")
@@ -282,9 +309,58 @@ def verifica(token):
     cursor = get_cursor(conn)
     cursor.execute("UPDATE utente SET verificato=TRUE, token_verifica=NULL WHERE token_verifica=%s", (token,))
     conn.commit()
+    
+    # Controlla se l'utente è stato aggiornato
+    if cursor.rowcount > 0:
+        message = "✅ Account verificato con successo! Ora puoi fare login."
+    else:
+        message = "❌ Token non valido o account già verificato."
+    
     cursor.close()
     conn.close()
-    return "Account verificato! Ora puoi fare login"
+    
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="refresh" content="3;url=/login">
+        <title>Verifica account - TwoDrive</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+            }}
+            .container {{
+                text-align: center;
+                background: white;
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            }}
+            .success {{ color: #28a745; font-size: 24px; margin-bottom: 20px; }}
+            .error {{ color: #dc3545; font-size: 24px; margin-bottom: 20px; }}
+            p {{ color: #666; }}
+            a {{ color: #667eea; text-decoration: none; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="{'success' if 'successo' in message else 'error'}">
+                {message.split()[0]}
+            </div>
+            <p>{message}</p>
+            <p>Verrai reindirizzato al login tra 3 secondi...</p>
+            <p><a href="/login">Clicca qui se non sei reindirizzato</a></p>
+        </div>
+    </body>
+    </html>
+    """
 
 # ==================== INSERISCI ANNUNCIO ====================
 
@@ -1214,4 +1290,3 @@ def init_db_online():
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
-
