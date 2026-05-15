@@ -57,15 +57,41 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def invia_mail_verifica(email_destinatario, username, token):
-    # Versione semplificata - verifica automatica
-    conn = connect_to_db()
-    cursor = get_cursor(conn)
-    cursor.execute("UPDATE utente SET verificato=TRUE WHERE username=%s", (username,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    print(f"✅ Utente {username} verificato automaticamente")
-    return
+    try:
+        # Crea il link di verifica
+        link_verifica = f"https://twodrive.onrender.com/verifica/{token}"
+        
+        # Corpo dell'email
+        soggetto = "Verifica il tuo account TwoDrive"
+        corpo = f"""
+        Ciao {username},
+        
+        Grazie per esserti registrato su TwoDrive!
+        
+        Clicca sul link qui sotto per verificare il tuo account:
+        {link_verifica}
+        
+        Se non ti sei registrato tu, ignora questa email.
+        
+        Grazie,
+        Il team di TwoDrive
+        """
+        
+        # Configura il messaggio email
+        msg = MIMEText(corpo, "plain", "utf-8")
+        msg["Subject"] = soggetto
+        msg["From"] = EMAIL_MITTENTE
+        msg["To"] = email_destinatario
+        
+        # Invia l'email
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
+            server.send_message(msg)
+        
+        print(f"✅ Email di verifica inviata a {email_destinatario}")
+        
+    except Exception as e:
+        print(f"❌ Errore invio email: {e}")
 
 def valida_annuncio(data):
     try:
@@ -184,7 +210,7 @@ def register():
             INSERT INTO utente
             (username,password,email,nome,cognome,data_registrazione,verificato,token_verifica)
             VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (username, password, email, nome, cognome, date.today(), True, token))
+        """, (username, password, email, nome, cognome, date.today(), False, token))
 
         conn.commit()
         cursor.close()
@@ -1180,3 +1206,4 @@ def init_db_online():
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
+
