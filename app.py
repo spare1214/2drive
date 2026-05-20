@@ -13,7 +13,18 @@ import json
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import threading
-import sib_api_v3_sdk
+
+import subprocess
+import sys
+
+# Forza l'installazione se la libreria manca
+try:
+    import sib_api_v3_sdk
+except ImportError:
+    print("⚠️ Libreria Brevo non trovata, installazione in corso...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "brevo-python"])
+    import sib_api_v3_sdk
+
 from sib_api_v3_sdk.rest import ApiException
 
 app = Flask(__name__)
