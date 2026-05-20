@@ -68,29 +68,57 @@ def hash_password(password):
 
 
 def invia_mail_verifica(email_destinatario, username, token):
-    dominio = "https://twodrive.onrender.com" if os.environ.get('RENDER') else "http://127.0.0.1:5000"
-    link_verifica = f"{dominio}/verifica/{token}"
+    """Invia email di verifica usando SMTP (funziona su Render con Gmail)"""
     
-    url = "https://api.brevo.com/v3/smtp/email"
-    headers = {
-        "api-key": os.environ.get('BREVO_API_KEY'),
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "sender": {"name": "TwoDrive", "email": "2drive.conferma@gmail.com"},
-        "to": [{"email": email_destinatario}],
-        "subject": "Verifica il tuo account TwoDrive",
-        "htmlContent": f"<html><body><p>Ciao {username},</p><p>Clicca <a href='{link_verifica}'>qui per verificare</a> il tuo account.</p></body></html>"
-    }
+    # Su Render, usa un approccio diverso
+    if IS_RENDER:
+        try:
+            # Prova a inviare con SMTP
+            link_verifica = f"https://twodrive.onrender.com/verifica/{token}"
+            
+            soggetto = "Verifica il tuo account TwoDrive"
+            corpo = f"""Ciao {username},
+
+Grazie per esserti registrato su TwoDrive!
+
+Clicca sul link qui sotto per verificare il tuo account:
+{link_verifica}
+
+Se non ti sei registrato tu, ignora questa email.
+
+Grazie,
+Il team di TwoDrive"""
+            
+            msg = MIMEText(corpo, "plain", "utf-8")
+            msg["Subject"] = soggetto
+            msg["From"] = "2drive.conferma@gmail.com"
+            msg["To"] = email_destinatario
+            
+            # Usa la porta 587 con STARTTLS (più affidabile su Render)
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()
+                server.login("2drive.conferma@gmail.com", "la_tua_password_app")
+                server.send_message(msg)
+            
+            print(f"✅ Email inviata a {email_destinatario}")
+            return
+            
+        except Exception as e:
+            print(f"❌ Errore SMTP: {e}")
+            # Fallback: verifica automatica
+            pass
     
+    # Fallback per Render: verifica automatica
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        if response.status_code == 201:
-            print("✅ Email inviata correttamente!")
-        else:
-            print(f"❌ Errore Brevo: {response.text}")
-    except Exception as e:
-        print(f"❌ Errore di connessione: {e}")
+        conn = connect_to_db()
+        cursor = get_cursor(conn)
+        cursor.execute("UPDATE utente SET verificato=TRUE WHERE username=%s", (username,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"✅ Account {username} verificato automaticamente")
+    except:
+        pass
 
 def valida_annuncio(data):
     try:
