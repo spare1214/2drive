@@ -1,10 +1,6 @@
-Flask
+flask
 flask-socketio
 psycopg2-binary
-Werkzeug
-flask-socketio
-python-socketio
-eventlet
 gunicorn
-mysql-connector-python
 brevo-python
+python-socketio
