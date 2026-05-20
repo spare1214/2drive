@@ -87,7 +87,7 @@ def invia_mail_verifica(email_destinatario, username, token):
     }
     
     data = {
-        "from": "onboarding@resend.dev",  # Dominio gratuito di Resend!
+        "from": "TwoDrive <onboarding@resend.dev>",  # Dominio gratuito di Resend!
         "to": [email_destinatario],
         "subject": "Verifica il tuo account TwoDrive",
         "html": f"""
