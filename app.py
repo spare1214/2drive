@@ -64,7 +64,41 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-
+@app.route("/test-resend")
+def test_resend():
+    import requests
+    RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+    
+    if not RESEND_API_KEY:
+        return "❌ RESEND_API_KEY non trovata su Render!<br>Aggiungila nelle Environment Variables."
+    
+    # Prova a inviare una email di test
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "from": "TwoDrive <onboarding@resend.dev>",
+        "to": ["momoighir193@gmail.com"],  # Metti la tua email
+        "subject": "Test Resend da Render",
+        "html": "<p>Questa è una email di test dal tuo server Render</p>"
+    }
+    
+    try:
+        response = requests.post(url, json=data, headers=headers)
+        return f"""
+        <h3>Risultato test Resend:</h3>
+        <p><strong>Status Code:</strong> {response.status_code}</p>
+        <p><strong>Response:</strong> {response.text}</p>
+        <hr>
+        <p>Se status_code = 200 → OK<br>
+        Se status_code = 401 → API Key sbagliata<br>
+        Se status_code = 403 → Account bloccato o limitato<br>
+        Se status_code = 422 → Errore nei dati</p>
+        """
+    except Exception as e:
+        return f"❌ Errore: {str(e)}"
 
 
 def invia_mail_verifica(email_destinatario, username, token):
