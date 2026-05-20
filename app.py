@@ -62,19 +62,9 @@ def invia_mail_verifica(email_destinatario, username, token):
     
     def send_email():
         try:
-            # Su Render, usa solo la verifica automatica per evitare timeout
-            if IS_RENDER:
-                conn = connect_to_db()
-                cursor = get_cursor(conn)
-                cursor.execute("UPDATE utente SET verificato=TRUE WHERE username=%s", (username,))
-                conn.commit()
-                cursor.close()
-                conn.close()
-                print(f"✅ Account {username} verificato automaticamente su Render")
-                return
-            
-            # Solo in locale: invia la vera email
-            link_verifica = f"http://127.0.0.1:5000/verifica/{token}"
+            # 1. Riconosce automaticamente se sei online (Render) o in locale (localhost)
+            dominio = "https://twodrive.onrender.com" if IS_RENDER else "http://127.0.0.1:5000"
+            link_verifica = f"{dominio}/verifica/{token}"
             
             soggetto = "Verifica il tuo account TwoDrive"
             corpo = f"""
@@ -96,6 +86,7 @@ Il team di TwoDrive
             msg["From"] = EMAIL_MITTENTE
             msg["To"] = email_destinatario
             
+            # 2. Invia la vera email tramite il server SMTP di Gmail
             with smtplib.SMTP("smtp.gmail.com", 587) as server:
                 server.starttls()
                 server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
@@ -105,7 +96,8 @@ Il team di TwoDrive
             
         except Exception as e:
             print(f"❌ Errore invio email: {e}")
-            # Se fallisce, verifica automaticamente comunque
+            # 3. Fallback di sicurezza: se Google dovesse bloccare l'SMTP per problemi di sicurezza,
+            # attiviamo comunque l'utente nel database per non lasciarlo bloccato.
             try:
                 conn = connect_to_db()
                 cursor = get_cursor(conn)
@@ -113,11 +105,11 @@ Il team di TwoDrive
                 conn.commit()
                 cursor.close()
                 conn.close()
-                print(f"⚠️ Account {username} verificato automaticamente (fallback)")
-            except:
-                pass
+                print(f"⚠️ Account {username} verificato automaticamente (fallback causa errore SMTP)")
+            except Exception as db_err:
+                print(f"❌ Errore database nel fallback: {db_err}")
     
-    # Avvia l'invio in un thread separato
+    # Avvia l'invio in un thread separato così la pagina web si carica subito
     thread = threading.Thread(target=send_email)
     thread.daemon = True
     thread.start()
@@ -250,7 +242,7 @@ def register():
 
         # Invia email di verifica in background
         invia_mail_verifica(email, username, token)
-
+        
         # Mostra pagina di conferma
         return render_template("verifica_inviata.html", email=email)
 
