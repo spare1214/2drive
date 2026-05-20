@@ -68,29 +68,52 @@ def hash_password(password):
 
 
 def invia_mail_verifica(email_destinatario, username, token):
+    """Invia email usando Resend - semplice e funziona su Render"""
+    
+    RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+    
+    if not RESEND_API_KEY:
+        print("⚠️ Resend non configurato")
+        return
+    
     dominio = "https://twodrive.onrender.com" if os.environ.get('RENDER') else "http://127.0.0.1:5000"
     link_verifica = f"{dominio}/verifica/{token}"
     
-    url = "https://api.brevo.com/v3/smtp/email"
+    url = "https://api.resend.com/emails"
+    
     headers = {
-        "api-key": os.environ.get('BREVO_API_KEY'),
+        "Authorization": f"Bearer {RESEND_API_KEY}",
         "Content-Type": "application/json"
     }
-    payload = {
-        "sender": {"name": "TwoDrive", "email": "2drive.conferma@gmail.com"},
-        "to": [{"email": email_destinatario}],
+    
+    data = {
+        "from": "onboarding@resend.dev",  # Dominio gratuito di Resend!
+        "to": [email_destinatario],
         "subject": "Verifica il tuo account TwoDrive",
-        "htmlContent": f"<html><body><p>Ciao {username},</p><p>Clicca <a href='{link_verifica}'>qui per verificare</a> il tuo account.</p></body></html>"
+        "html": f"""
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <h2>Ciao {username}!</h2>
+            <p>Grazie per esserti registrato su <strong>TwoDrive</strong>.</p>
+            <p>Clicca sul pulsante qui sotto per verificare il tuo account:</p>
+            <a href="{link_verifica}" style="background-color: #0B0058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Verifica Account</a>
+            <p>Se non funziona il pulsante, copia questo link nel browser:<br>{link_verifica}</p>
+            <hr>
+            <p style="color: #666; font-size: 12px;">Se non ti sei registrato tu, ignora questa email.</p>
+        </body>
+        </html>
+        """
     }
     
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        if response.status_code == 201:
-            print("✅ Email inviata correttamente!")
+        response = requests.post(url, json=data, headers=headers)
+        if response.status_code == 200:
+            print(f"✅ Email inviata a {email_destinatario}")
         else:
-            print(f"❌ Errore Brevo: {response.text}")
+            print(f"❌ Errore: {response.text}")
     except Exception as e:
-        print(f"❌ Errore di connessione: {e}")
+        print(f"❌ Errore: {e}")
 
 def valida_annuncio(data):
     try:
