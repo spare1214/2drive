@@ -13,7 +13,7 @@ import json
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import threading
-
+import requests
 import subprocess
 import sys
 
@@ -73,31 +73,32 @@ def hash_password(password):
 
 
 
+
+
 def invia_mail_verifica(email_destinatario, username, token):
-    # Configurazione
-    configuration = sib_api_v3_sdk.Configuration()
-    # Recupera la chiave da Render (non scriverla qui dentro!)
-    configuration.api_key['api-key'] = os.environ.get('BREVO_API_KEY')
-    
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-    
-    # Crea il link
-    dominio = "https://twodrive.onrender.com" if IS_RENDER else "http://127.0.0.1:5000"
+    dominio = "https://twodrive.onrender.com" if os.environ.get('RENDER') else "http://127.0.0.1:5000"
     link_verifica = f"{dominio}/verifica/{token}"
     
-    # Prepara l'email
-    subject = "Verifica il tuo account TwoDrive"
-    html_content = f"<html><body><p>Ciao {username},</p><p>Clicca <a href='{link_verifica}'>qui per verificare</a> il tuo account.</p></body></html>"
-    sender = {"name": "TwoDrive", "email": "2drive.conferma@gmail.com"}
-    to = [{"email": email_destinatario}]
-    
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(to=to, html_content=html_content, sender=sender, subject=subject)
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "api-key": os.environ.get('BREVO_API_KEY'),
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "sender": {"name": "TwoDrive", "email": "2drive.conferma@gmail.com"},
+        "to": [{"email": email_destinatario}],
+        "subject": "Verifica il tuo account TwoDrive",
+        "htmlContent": f"<html><body><p>Ciao {username},</p><p>Clicca <a href='{link_verifica}'>qui per verificare</a> il tuo account.</p></body></html>"
+    }
     
     try:
-        api_instance.send_transac_email(send_smtp_email)
-        print(f"✅ Email inviata con successo via Brevo a {email_destinatario}")
-    except ApiException as e:
-        print(f"❌ Errore API Brevo: {e}")
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 201:
+            print("✅ Email inviata correttamente!")
+        else:
+            print(f"❌ Errore Brevo: {response.text}")
+    except Exception as e:
+        print(f"❌ Errore di connessione: {e}")
 
 def valida_annuncio(data):
     try:
