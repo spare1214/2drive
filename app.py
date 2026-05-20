@@ -162,6 +162,12 @@ def home():
     conn = connect_to_db()
     cursor = get_cursor(conn)
 
+    cursor.execute("SELECT * FROM marca ORDER BY nome_marca")
+    marche = cursor.fetchall()
+    
+    cursor.execute("SELECT * FROM categoria")
+    categorie = cursor.fetchall()
+    
     cursor.execute("""
         SELECT COUNT(DISTINCT annuncio.id_annuncio) as total
         FROM annuncio
@@ -201,7 +207,9 @@ def home():
                          annunci=annunci, 
                          page=page, 
                          total_pages=total_pages,
-                         total=total)
+                         total=total,
+                         marche=marche,
+                         categorie=categorie)
 
 # ==================== REGISTRAZIONE ====================
 
