@@ -7,3 +7,4 @@ python-socketio
 eventlet
 gunicorn
 mysql-connector-python
+brevo-python
