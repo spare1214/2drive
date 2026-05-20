@@ -13,6 +13,8 @@ import json
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import threading
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -25,8 +27,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-EMAIL_MITTENTE = "2drive.conferma@gmail.com"
-EMAIL_PASSWORD = "fvmo zhlh zxoo frwi"
+# Usa questo metodo
+EMAIL_MITTENTE = os.environ.get('EMAIL_MITTENTE')
+EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 
 # Aggiungi questo sotto gli import
 IS_RENDER = os.environ.get('RENDER', 'False') == 'True'
@@ -57,62 +60,33 @@ def allowed_file(filename):
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+
+
 def invia_mail_verifica(email_destinatario, username, token):
-    """Invia email di verifica in modo asincrono per non bloccare la richiesta"""
+    # Configurazione
+    configuration = sib_api_v3_sdk.Configuration()
+    # Recupera la chiave da Render (non scriverla qui dentro!)
+    configuration.api_key['api-key'] = os.environ.get('BREVO_API_KEY')
     
-    def send_email():
-        try:
-            # 1. Riconosce automaticamente se sei online (Render) o in locale (localhost)
-            dominio = "https://twodrive.onrender.com" if IS_RENDER else "http://127.0.0.1:5000"
-            link_verifica = f"{dominio}/verifica/{token}"
-            
-            soggetto = "Verifica il tuo account TwoDrive"
-            corpo = f"""
-Ciao {username},
-
-Grazie per esserti registrato su TwoDrive!
-
-Clicca sul link qui sotto per verificare il tuo account:
-{link_verifica}
-
-Se non ti sei registrato tu, ignora questa email.
-
-Grazie,
-Il team di TwoDrive
-"""
-            
-            msg = MIMEText(corpo, "plain", "utf-8")
-            msg["Subject"] = soggetto
-            msg["From"] = EMAIL_MITTENTE
-            msg["To"] = email_destinatario
-            
-            # 2. Invia la vera email tramite il server SMTP di Gmail
-            with smtplib.SMTP("smtp.gmail.com", 587) as server:
-                server.starttls()
-                server.login(EMAIL_MITTENTE, EMAIL_PASSWORD)
-                server.send_message(msg)
-            
-            print(f"✅ Email di verifica inviata a {email_destinatario}")
-            
-        except Exception as e:
-            print(f"❌ Errore invio email: {e}")
-            # 3. Fallback di sicurezza: se Google dovesse bloccare l'SMTP per problemi di sicurezza,
-            # attiviamo comunque l'utente nel database per non lasciarlo bloccato.
-            try:
-                conn = connect_to_db()
-                cursor = get_cursor(conn)
-                cursor.execute("UPDATE utente SET verificato=TRUE WHERE username=%s", (username,))
-                conn.commit()
-                cursor.close()
-                conn.close()
-                print(f"⚠️ Account {username} verificato automaticamente (fallback causa errore SMTP)")
-            except Exception as db_err:
-                print(f"❌ Errore database nel fallback: {db_err}")
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
     
-    # Avvia l'invio in un thread separato così la pagina web si carica subito
-    thread = threading.Thread(target=send_email)
-    thread.daemon = True
-    thread.start()
+    # Crea il link
+    dominio = "https://twodrive.onrender.com" if IS_RENDER else "http://127.0.0.1:5000"
+    link_verifica = f"{dominio}/verifica/{token}"
+    
+    # Prepara l'email
+    subject = "Verifica il tuo account TwoDrive"
+    html_content = f"<html><body><p>Ciao {username},</p><p>Clicca <a href='{link_verifica}'>qui per verificare</a> il tuo account.</p></body></html>"
+    sender = {"name": "TwoDrive", "email": "2drive.conferma@gmail.com"}
+    to = [{"email": email_destinatario}]
+    
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(to=to, html_content=html_content, sender=sender, subject=subject)
+    
+    try:
+        api_instance.send_transac_email(send_smtp_email)
+        print(f"✅ Email inviata con successo via Brevo a {email_destinatario}")
+    except ApiException as e:
+        print(f"❌ Errore API Brevo: {e}")
 
 def valida_annuncio(data):
     try:
