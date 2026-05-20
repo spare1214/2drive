@@ -25,8 +25,8 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-EMAIL_MITTENTE = "mohamedighir56@gmail.com"
-EMAIL_PASSWORD = "sybc sxpy nmkx ujqz"
+EMAIL_MITTENTE = "2drive.conferma@gmail.com"
+EMAIL_PASSWORD = "fvmo zhlh zxoo frwi"
 
 # Aggiungi questo sotto gli import
 IS_RENDER = os.environ.get('RENDER', 'False') == 'True'
