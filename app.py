@@ -680,12 +680,12 @@ def chat_invia_messaggio():
     
     cursor.execute("""
         INSERT INTO messaggio (id_conversazione, id_mittente, id_destinatario, id_annuncio, contenuto, data_invio, letto)
-        VALUES (%s, %s, %s, %s, %s, datetime('now'), 0)
+        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP 0)
     """, (id_conversazione, session["user_id"], id_destinatario, conv_dict.get('id_annuncio'), messaggio))
     
     cursor.execute("""
         UPDATE conversazione 
-        SET ultimo_messaggio = %s, ultimo_aggiornamento = datetime('now')
+        SET ultimo_messaggio = %s, ultimo_aggiornamento = CURRENT_TIMESTAMP
         WHERE id_conversazione = %s
     """, (messaggio[:100], id_conversazione))
     
@@ -740,7 +740,7 @@ def chat_nuova_conversazione(id_annuncio):
     else:
         cursor.execute("""
             INSERT INTO conversazione (id_annuncio, id_acquirente, id_venditore, ultimo_aggiornamento)
-            VALUES (%s, %s, %s, datetime('now'))
+            VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
         """, (id_annuncio, session["user_id"], annuncio_dict['id_utente']))
         id_conversazione = cursor.lastrowid
         conn.commit()
@@ -1068,7 +1068,7 @@ def valuta_utente(id_utente, id_annuncio):
     try:
         cursor.execute("""
             INSERT INTO recensione (id_recensore, id_recensito, id_annuncio, voto, commento, data_recensione)
-            VALUES (%s, %s, %s, %s, %s, datetime('now'))
+            VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
         """, (session["user_id"], id_utente, id_annuncio, voto, commento))
         
         cursor.execute("""
