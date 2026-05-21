@@ -370,7 +370,7 @@ def inserisci():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    # === RECUPERA DATI PER I DROPDOWN (sia GET che POST) ===
+    # Recupera marche e categorie
     conn = connect_to_db()
     cursor = get_cursor(conn)
     
@@ -429,34 +429,36 @@ def inserisci():
         cursor = get_cursor(conn)
         
         try:
+            # Inserisci veicolo e recupera l'ID con RETURNING
             cursor.execute("""
                 INSERT INTO veicolo
                 (modello, anno, data_immatricolazione, targa, carburante, cambio, 
                  chilometraggio, colore, numero_posti, luogo, id_marca, id_categoria, prezzo, telefono)
                 VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                RETURNING id_veicolo
             """, (modello, anno, data_immatricolazione, targa, carburante, cambio,
                   chilometraggio, colore, numero_posti, luogo, id_marca, id_categoria, 
                   prezzo_annuncio, telefono))
             
-            id_veicolo = cursor.lastrowid
+            id_veicolo = cursor.fetchone()['id_veicolo']  # PostgreSQL usa fetchone() con RETURNING
             
+            # Inserisci annuncio e recupera l'ID
             cursor.execute("""
                 INSERT INTO annuncio
                 (titolo, descrizione, data_pubblicazione, stato, id_utente, id_veicolo, prezzo, telefono_visibile)
                 VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
+                RETURNING id_annuncio
             """, (titolo, descrizione, date.today(), "attivo", session["user_id"], 
                   id_veicolo, prezzo_annuncio, mostra_telefono))
             
-            id_annuncio = cursor.lastrowid
+            id_annuncio = cursor.fetchone()['id_annuncio']  # PostgreSQL usa fetchone() con RETURNING
             
+            # Inserisci immagini
             for url in immagini_urls:
                 cursor.execute("INSERT INTO immagine (url, id_annuncio) VALUES(%s,%s)", (url, id_annuncio))
             
             conn.commit()
             flash("Annuncio pubblicato con successo!", "success")
-            cursor.close()
-            conn.close()
-            return redirect(url_for("home"))
             
         except Exception as e:
             conn.rollback()
@@ -465,10 +467,14 @@ def inserisci():
             cursor.close()
             conn.close()
             return render_template("inserisci.html", marche=marche, categorie=categorie)
+            
+        finally:
+            cursor.close()
+            conn.close()
+        
+        return redirect(url_for("home"))
     
-    # Metodo GET
     return render_template("inserisci.html", marche=marche, categorie=categorie)
-
 # ==================== DETTAGLIO ANNUNCIO ====================
 
 @app.route("/annuncio/<id>")
@@ -1292,4 +1298,5 @@ def init_db_online():
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
+
 
