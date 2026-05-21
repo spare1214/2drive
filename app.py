@@ -370,11 +370,24 @@ def inserisci():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
+    # === RECUPERA DATI PER I DROPDOWN (sia GET che POST) ===
+    conn = connect_to_db()
+    cursor = get_cursor(conn)
+    
+    cursor.execute("SELECT * FROM marca ORDER BY nome_marca")
+    marche = cursor.fetchall()
+    
+    cursor.execute("SELECT * FROM categoria")
+    categorie = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+
     if request.method == "POST":
         valido, msg = valida_annuncio(request.form)
         if not valido:
             flash(msg, "error")
-            return redirect(url_for("inserisci"))
+            return render_template("inserisci.html", marche=marche, categorie=categorie)
         
         titolo = request.form["titolo"]
         descrizione = request.form["descrizione"]
@@ -441,31 +454,19 @@ def inserisci():
             
             conn.commit()
             flash("Annuncio pubblicato con successo!", "success")
+            cursor.close()
+            conn.close()
+            return redirect(url_for("home"))
             
         except Exception as e:
             conn.rollback()
             print(f"Errore: {e}")
             flash(f"Errore: {str(e)}", "error")
-            return redirect(url_for("inserisci"))
-            
-        finally:
             cursor.close()
             conn.close()
-        
-        return redirect(url_for("home"))
+            return render_template("inserisci.html", marche=marche, categorie=categorie)
     
-    conn = connect_to_db()
-    cursor = get_cursor(conn)
-    
-    cursor.execute("SELECT * FROM marca ORDER BY nome_marca")
-    marche = cursor.fetchall()
-    
-    cursor.execute("SELECT * FROM categoria")
-    categorie = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
+    # Metodo GET
     return render_template("inserisci.html", marche=marche, categorie=categorie)
 
 # ==================== DETTAGLIO ANNUNCIO ====================
@@ -1291,3 +1292,4 @@ def init_db_online():
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
+
